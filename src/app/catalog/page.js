@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, Suspense, useCallback } from 'react';
+import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { Search, Filter, ShoppingBag, Check, SlidersHorizontal, Heart } from 'lucide-react';
+import { Search, Filter, ShoppingBag, Check, SlidersHorizontal, Heart, RotateCcw } from 'lucide-react';
 
 function CatalogContent() {
   const { addToCart } = useCart();
@@ -25,11 +25,11 @@ function CatalogContent() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState(searchParams.get('category') || '');
   const [selectedSize, setSelectedSize] = useState('');
-  const [maxPrice, setMaxPrice] = useState('50000');
+  const [maxPrice, setMaxPrice] = useState(50000);
 
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-  // Sync state whenever URL query params change
+  // Sync category state whenever URL query params change (e.g. Navbar links)
   useEffect(() => {
     const urlCategory = searchParams.get('category') || '';
     setCategory(urlCategory);
@@ -44,11 +44,6 @@ function CatalogContent() {
       const query = new URLSearchParams();
       if (search) query.set('search', search);
       if (category) query.set('category', category);
-      if (selectedSize) query.set('size', selectedSize);
-      
-      if (maxPrice && Number(maxPrice) < 50000) {
-        query.set('maxPrice', maxPrice);
-      }
 
       const url = `/api/products?${query.toString()}`;
 
@@ -77,18 +72,52 @@ function CatalogContent() {
     } finally {
       setLoading(false);
     }
-  }, [search, category, selectedSize, maxPrice]);
+  }, [search, category]);
 
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  // Robust Client-Side Filtering (Fallback for size, price slider, & search)
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      // 1. Search Filter
+      if (search) {
+        const query = search.toLowerCase();
+        const matchTitle = product.title?.toLowerCase().includes(query);
+        const matchCat = product.category?.toLowerCase().includes(query);
+        if (!matchTitle && !matchCat) return false;
+      }
+
+      // 2. Category Filter (Case-insensitive matching)
+      if (category && product.category?.toLowerCase() !== category.toLowerCase()) {
+        return false;
+      }
+
+      // 3. Size Filter
+      if (selectedSize && !product.sizes?.includes(selectedSize)) {
+        return false;
+      }
+
+      // 4. Max Price Filter (Compares against final discounted price)
+      const rawPrice = Number(product.price) || 0;
+      const rawOffer = Number(product.offer) || 0;
+      const finalPrice = rawOffer > 0 ? rawPrice - (rawPrice * rawOffer) / 100 : rawPrice;
+
+      if (finalPrice > maxPrice) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [products, search, category, selectedSize, maxPrice]);
 
   const handleCategorySelect = (selectedCat) => {
     setCategory(selectedCat);
     if (selectedCat === '') {
       router.push('/catalog');
     } else {
-      router.push(`/catalog?category=${selectedCat}`);
+      router.push(`/catalog?category=${encodeURIComponent(selectedCat)}`);
     }
   };
 
@@ -117,7 +146,7 @@ function CatalogContent() {
     setSearch('');
     setCategory('');
     setSelectedSize('');
-    setMaxPrice('50000');
+    setMaxPrice(50000);
     router.push('/catalog');
   };
 
@@ -156,35 +185,43 @@ function CatalogContent() {
             </div>
             <button
               onClick={clearFilters}
-              className="text-xs text-indigo-600 font-semibold hover:underline"
+              className="text-xs text-indigo-600 font-bold hover:underline flex items-center space-x-1"
             >
-              Reset All
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset All</span>
             </button>
           </div>
 
           {/* Category Filter */}
           <div>
             <h3 className="text-sm font-bold text-gray-900 mb-3">Category</h3>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <button
                 onClick={() => handleCategorySelect('')}
-                className={`block w-full text-left text-sm px-3 py-1.5 rounded-lg transition ${
-                  category === '' ? 'bg-indigo-600 text-white font-semibold' : 'text-gray-700 hover:bg-gray-200'
+                className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition ${
+                  category === ''
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                    : 'text-gray-700 hover:bg-gray-200/60'
                 }`}
               >
                 All Categories
               </button>
-              {allCategories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => handleCategorySelect(cat)}
-                  className={`block w-full text-left text-sm px-3 py-1.5 rounded-lg transition ${
-                    category === cat ? 'bg-indigo-600 text-white font-semibold' : 'text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+              {allCategories.map((cat) => {
+                const isSelected = category.toLowerCase() === cat.toLowerCase();
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => handleCategorySelect(cat)}
+                    className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                        : 'text-gray-700 hover:bg-gray-200/60'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -192,19 +229,22 @@ function CatalogContent() {
           <div>
             <h3 className="text-sm font-bold text-gray-900 mb-3">Size</h3>
             <div className="grid grid-cols-3 gap-2">
-              {sizes.map((sz) => (
-                <button
-                  key={sz}
-                  onClick={() => setSelectedSize(selectedSize === sz ? '' : sz)}
-                  className={`py-1.5 text-xs font-semibold rounded-lg border transition ${
-                    selectedSize === sz
-                      ? 'border-indigo-600 bg-indigo-600 text-white'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                  }`}
-                >
-                  {sz}
-                </button>
-              ))}
+              {sizes.map((sz) => {
+                const isSelected = selectedSize === sz;
+                return (
+                  <button
+                    key={sz}
+                    onClick={() => setSelectedSize(isSelected ? '' : sz)}
+                    className={`py-1.5 text-xs font-bold rounded-xl border transition ${
+                      isSelected
+                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
+                  >
+                    {sz}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -212,15 +252,17 @@ function CatalogContent() {
           <div>
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-bold text-gray-900">Max Price</h3>
-              <span className="text-sm font-bold text-indigo-600">₹{Number(maxPrice).toLocaleString('en-IN')}</span>
+              <span className="text-xs font-black text-indigo-600">
+                ₹{Number(maxPrice).toLocaleString('en-IN')}
+              </span>
             </div>
             <input
               type="range"
-              min="500"
+              min="300"
               max="50000"
               step="500"
               value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
+              onChange={(e) => setMaxPrice(Number(e.target.value))}
               className="w-full accent-indigo-600 cursor-pointer"
             />
           </div>
@@ -237,23 +279,25 @@ function CatalogContent() {
           {loading ? (
             <div className="py-20 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-              <p className="mt-4 text-gray-600 font-medium">Loading collection...</p>
+              <p className="mt-4 text-gray-600 font-medium text-xs">Loading collection...</p>
             </div>
-          ) : products.length === 0 ? (
-            <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
-              <Filter className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-gray-900">No products found</h3>
-              <p className="text-gray-500 text-sm mt-1">Try resetting or broadening your filters.</p>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-300 space-y-3">
+              <Filter className="w-10 h-10 text-gray-400 mx-auto" />
+              <h3 className="text-lg font-bold text-gray-900">No products match your filter</h3>
+              <p className="text-gray-500 text-xs max-w-xs mx-auto">
+                Try raising the price slider or resetting size and category selections.
+              </p>
               <button
                 onClick={clearFilters}
-                className="mt-4 bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
+                className="mt-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 transition shadow-md"
               >
                 Reset Filters
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((product) => {
+              {filteredProducts.map((product) => {
                 const rawPrice = Number(product.price) || 0;
                 const rawOffer = Number(product.offer) || 0;
                 const hasOffer = rawOffer > 0;
@@ -285,7 +329,7 @@ function CatalogContent() {
 
                         {/* Category Tag */}
                         {product.category && (
-                          <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-xs font-bold text-gray-900 px-2.5 py-1 rounded-md border border-gray-200">
+                          <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-[10px] font-bold text-gray-900 px-2 py-0.5 rounded-md border border-gray-200 uppercase">
                             {product.category}
                           </span>
                         )}
@@ -315,17 +359,19 @@ function CatalogContent() {
                     <div className="p-4 flex flex-col flex-1 justify-between">
                       <div>
                         <Link href={`/product/${product._id}`}>
-                          <h2 className="font-bold text-gray-900 text-base line-clamp-1 hover:text-indigo-600 transition">
+                          <h2 className="font-bold text-gray-900 text-sm line-clamp-1 hover:text-indigo-600 transition">
                             {product.title}
                           </h2>
                         </Link>
-                        <p className="text-gray-500 text-xs mt-1 line-clamp-2">{product.description}</p>
+                        <p className="text-gray-500 text-xs mt-1 line-clamp-2">
+                          {product.description || 'No description available.'}
+                        </p>
                       </div>
 
                       {/* Price Container */}
                       <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
                         <div className="flex items-baseline space-x-1.5">
-                          <span className="text-lg font-black text-gray-900">
+                          <span className="text-base font-black text-gray-900">
                             ₹{finalPrice.toLocaleString('en-IN')}
                           </span>
                           {hasOffer && (
@@ -365,7 +411,7 @@ function CatalogContent() {
 
 export default function CatalogPage() {
   return (
-    <Suspense fallback={<div className="py-20 text-center text-xs">Loading collection...</div>}>
+    <Suspense fallback={<div className="py-20 text-center text-xs font-semibold">Loading collection...</div>}>
       <CatalogContent />
     </Suspense>
   );

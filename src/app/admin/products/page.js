@@ -81,17 +81,46 @@ export default function AdminProductsPage() {
     setIsModalOpen(true);
   };
 
-  // Convert File to Base64 String
+  // Convert File to Compressed Base64 String (~50KB)
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setForm((prev) => ({
-        ...prev,
-        images: [reader.result],
-      }));
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress image to JPEG format with 70% quality
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        setForm((prev) => ({
+          ...prev,
+          images: [compressedBase64],
+        }));
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
@@ -102,7 +131,7 @@ export default function AdminProductsPage() {
 
     const payload = {
       title: form.title,
-      description: form.description,
+      description: form.description ? form.description.trim() : '',
       price: Number(form.price) || 0,
       offer: form.offer !== '' && form.offer != null ? Number(form.offer) : 0,
       category: form.category,
@@ -257,7 +286,7 @@ export default function AdminProductsPage() {
                               {prod.title}
                             </p>
                             <p className="text-xs text-gray-400 line-clamp-1 font-normal max-w-xs mt-0.5">
-                              {prod.description}
+                              {prod.description || 'No description provided.'}
                             </p>
                           </div>
                         </div>
@@ -269,7 +298,6 @@ export default function AdminProductsPage() {
                         </span>
                       </td>
 
-                      {/* Clean Price Column */}
                       <td className="py-4 px-4 whitespace-nowrap font-black text-gray-900">
                         <div className="flex items-baseline space-x-1.5">
                           <span>₹{finalPrice.toLocaleString('en-IN')}</span>
@@ -281,7 +309,6 @@ export default function AdminProductsPage() {
                         </div>
                       </td>
 
-                      {/* Clean Offer Column */}
                       <td className="py-4 px-4 whitespace-nowrap">
                         {hasOffer ? (
                           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200/60">
@@ -292,7 +319,6 @@ export default function AdminProductsPage() {
                         )}
                       </td>
 
-                      {/* Stock Status */}
                       <td className="py-4 px-4 whitespace-nowrap">
                         {isOutOfStock ? (
                           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200/60">
@@ -368,14 +394,16 @@ export default function AdminProductsPage() {
                 />
               </div>
 
+              {/* Optional Description */}
               <div>
-                <label className="block text-xs font-bold uppercase text-gray-700 mb-1">Description</label>
+                <label className="block text-xs font-bold uppercase text-gray-700 mb-1">
+                  Description <span className="text-[10px] text-gray-400 font-normal">(Opt)</span>
+                </label>
                 <textarea
                   rows="3"
-                  required
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Brief summary of item features and materials..."
+                  placeholder="Brief summary of item features and materials (Optional)..."
                   className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
                 />
               </div>
@@ -497,7 +525,7 @@ export default function AdminProductsPage() {
                     <span className="text-xs font-bold text-gray-700 group-hover:text-indigo-600 transition">
                       Click to upload image file
                     </span>
-                    <span className="text-[10px] text-gray-400 mt-0.5">PNG, JPG, or WEBP up to 5MB</span>
+                    <span className="text-[10px] text-gray-400 mt-0.5">PNG, JPG, or WEBP (Compressed automatically)</span>
                     <input
                       type="file"
                       accept="image/*"

@@ -21,17 +21,17 @@ export async function POST(req) {
 
     const { title, description, price, offer, category, sizes, colors, images, stock, isFeatured } = body;
 
-    // Validation
-    if (!title || !description || price == null || !category || !images || images.length === 0) {
+    // Validation: Description is now OPTIONAL
+    if (!title || price == null || !category || !images || images.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Please fill in all required fields' },
+        { success: false, error: 'Please fill in title, price, category, and upload an image.' },
         { status: 400 }
       );
     }
 
     const newProduct = await Product.create({
       title,
-      description,
+      description: description ? description.trim() : '',
       price: Number(price) || 0,
       offer: offer != null && offer !== '' ? Number(offer) : 0,
       category,
@@ -62,7 +62,7 @@ export async function PUT(req) {
       );
     }
 
-    // Explicitly enforce numeric values
+    // Explicitly enforce numeric values & optional string fields
     if ('price' in updateData) {
       updateData.price = Number(updateData.price) || 0;
     }
@@ -71,6 +71,9 @@ export async function PUT(req) {
     }
     if ('stock' in updateData) {
       updateData.stock = Number(updateData.stock) || 0;
+    }
+    if ('description' in updateData) {
+      updateData.description = updateData.description ? updateData.description.trim() : '';
     }
 
     const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {

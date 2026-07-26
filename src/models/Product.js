@@ -8,7 +8,7 @@ if (process.env.NODE_ENV !== 'production') {
 const ProductSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-    description: { type: String },
+    description: { type: String, default: '' },
     price: { type: Number, required: true },
     offer: { type: Number, default: 0 },
     category: { type: String, required: true },

@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
+import dbConnect from '@/lib/db';
+import StockAlert from '@/models/StockAlert';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req) {
   try {
+    await dbConnect();
     const { email, productId, productName } = await req.json();
 
     if (!email || !productId) {
@@ -14,11 +17,18 @@ export async function POST(req) {
       );
     }
 
-    // Send confirmation email to the user
+    // Save alert request in MongoDB
+    await StockAlert.create({
+      email,
+      productId,
+      productName: productName || 'Your Item',
+    });
+
+    // Send instant confirmation email
     await resend.emails.send({
-      from: 'Attire Store <onboarding@resend.dev>', // Change to your domain when verified
+      from: 'Attire Store <onboarding@resend.dev>',
       to: email,
-      subject: `Restock Alert: ${productName || 'Your Item'}`,
+      subject: `Restock Request Received: ${productName || 'Your Item'}`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333;">
           <h2>We've got you covered!</h2>
@@ -30,9 +40,9 @@ export async function POST(req) {
       `,
     });
 
-    return NextResponse.json({ success: true, message: 'Stock alert email sent!' });
+    return NextResponse.json({ success: true, message: 'Subscribed to stock alert!' });
   } catch (error) {
-    console.error('Email error:', error);
+    console.error('Stock Alert Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

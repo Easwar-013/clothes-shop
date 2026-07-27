@@ -398,9 +398,13 @@ export default function ProductDetailPage({ params: paramsPromise }) {
               )}
             </div>
 
-            {/* Integrated StockAlert Component */}
+            {/* Integrated StockAlert Component with required props */}
             <div className="mt-4">
-              <StockAlert stock={product.stock ?? 0} productName={product.title} />
+              <StockAlert 
+                stock={product.stock ?? 0} 
+                productId={product._id || id} 
+                productName={product.title} 
+              />
             </div>
 
             <p className="text-gray-600 mt-5 leading-relaxed text-sm">

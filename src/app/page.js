@@ -12,7 +12,6 @@ export default function HomePage() {
   const [addedId, setAddedId] = useState(null);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Scroll Reference for Navigation & Auto-scroll
   const scrollRef = useRef(null);
 
   const categories = [
@@ -31,12 +30,10 @@ export default function HomePage() {
         if (data.success && data.products?.length > 0) {
           const rawProducts = data.products;
 
-          // 1. Filter and sort products with offers (high discount to low)
           const offerProducts = rawProducts
             .filter((p) => Number(p.offer) > 0)
             .sort((a, b) => Number(b.offer) - Number(a.offer));
 
-          // 2. Filter and sort non-offer products by latest deployment
           const nonOfferProducts = rawProducts
             .filter((p) => !p.offer || Number(p.offer) === 0)
             .sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0));
@@ -54,10 +51,9 @@ export default function HomePage() {
     fetchProducts();
   }, []);
 
-  // Duplicate items array to make continuous looping smooth
   const displayProducts = products.length > 0 ? [...products, ...products, ...products] : [];
 
-  // Continuous Auto-Scroll Loop that works alongside manual scroll
+  // Faster, reliable smooth auto-scroll loop
   useEffect(() => {
     if (loading || displayProducts.length === 0 || isPaused) return;
 
@@ -65,21 +61,20 @@ export default function HomePage() {
     if (!container) return;
 
     const interval = setInterval(() => {
-      // Loop back to start if reached the end
-      if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 5) {
+      if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
         container.scrollLeft = 0;
       } else {
-        container.scrollLeft += 1;
+        container.scrollLeft += 2.5; // Faster speed
       }
-    }, 25);
+    }, 16); // 60fps ticker
 
     return () => clearInterval(interval);
   }, [loading, displayProducts, isPaused]);
 
-  // Smooth Horizontal Scroll Handler for Left / Right Buttons
+  // Working Navigation Arrow Click Handler
   const scroll = (direction) => {
     if (scrollRef.current) {
-      const scrollAmount = direction === 'left' ? -350 : 350;
+      const scrollAmount = direction === 'left' ? -320 : 350;
       scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   };
@@ -216,7 +211,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. Trending Now Section: Auto-Moving + Scrollable */}
+      {/* 4. Trending Now Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex justify-between items-end">
           <div>
@@ -230,19 +225,19 @@ export default function HomePage() {
               <ArrowRight className="w-4 h-4" />
             </Link>
 
-            {/* Left Scroll Navigation Button */}
+            {/* Working Scroll Left Button */}
             <button
               onClick={() => scroll('left')}
-              className="p-2.5 rounded-full bg-gray-100 hover:bg-indigo-600 hover:text-white text-gray-700 transition shadow-sm"
+              className="p-3 rounded-full bg-gray-100 hover:bg-indigo-600 hover:text-white text-gray-800 active:scale-95 transition shadow-sm border border-gray-200"
               aria-label="Scroll Left"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
-            {/* Right Scroll Navigation Button */}
+            {/* Working Scroll Right Button */}
             <button
               onClick={() => scroll('right')}
-              className="p-2.5 rounded-full bg-gray-100 hover:bg-indigo-600 hover:text-white text-gray-700 transition shadow-sm"
+              className="p-3 rounded-full bg-gray-100 hover:bg-indigo-600 hover:text-white text-gray-800 active:scale-95 transition shadow-sm border border-gray-200"
               aria-label="Scroll Right"
             >
               <ChevronRight className="w-5 h-5" />
@@ -265,7 +260,7 @@ export default function HomePage() {
             onMouseLeave={() => setIsPaused(false)}
             onTouchStart={() => setIsPaused(true)}
             onTouchEnd={() => setIsPaused(false)}
-            className="flex space-x-6 overflow-x-auto py-2 px-1 scroll-smooth"
+            className="flex space-x-6 overflow-x-auto py-2 px-1 border-b border-transparent scrollbar-none"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {displayProducts.map((product, idx) => {
@@ -302,7 +297,6 @@ export default function HomePage() {
                         </span>
                       )}
 
-                      {/* Offer Badge Overlay */}
                       {hasOffer && (
                         <span className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md">
                           {offerPercent}% OFF
@@ -321,7 +315,6 @@ export default function HomePage() {
                       <p className="text-gray-500 text-xs mt-1 line-clamp-1">{product.description || 'No description provided.'}</p>
                     </div>
 
-                    {/* Price Row */}
                     <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
                       <div className="flex items-baseline space-x-1.5">
                         <span className="text-lg font-black text-gray-900">

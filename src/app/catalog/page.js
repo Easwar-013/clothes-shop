@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { Search, Filter, ShoppingBag, Check, SlidersHorizontal, Heart, RotateCcw } from 'lucide-react';
+import { Search, Filter, ShoppingBag, Check, SlidersHorizontal, Heart, RotateCcw, X } from 'lucide-react';
 
 function CatalogContent() {
   const { addToCart } = useCart();
@@ -17,11 +17,11 @@ function CatalogContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addedId, setAddedId] = useState(null);
+  
+  // Mobile Filter Drawer Toggle State
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Dynamic categories collected from database items
   const [dynamicCategories, setDynamicCategories] = useState([]);
-
-  // Filter States
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState(searchParams.get('category') || '');
   const [selectedSize, setSelectedSize] = useState('');
@@ -29,13 +29,11 @@ function CatalogContent() {
 
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-  // Sync category state whenever URL query params change (e.g. Navbar links)
   useEffect(() => {
     const urlCategory = searchParams.get('category') || '';
     setCategory(urlCategory);
   }, [searchParams]);
 
-  // Fetch API function
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
@@ -46,11 +44,8 @@ function CatalogContent() {
       if (category) query.set('category', category);
 
       const url = `/api/products?${query.toString()}`;
-
       const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(`HTTP Error Status: ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP Error Status: ${res.status}`);
 
       const data = await res.json();
       if (data.success) {
@@ -78,10 +73,8 @@ function CatalogContent() {
     fetchProducts();
   }, [fetchProducts]);
 
-  // Robust Client-Side Filtering (Fallback for size, price slider, & search)
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
-      // 1. Search Filter
       if (search) {
         const query = search.toLowerCase();
         const matchTitle = product.title?.toLowerCase().includes(query);
@@ -89,17 +82,14 @@ function CatalogContent() {
         if (!matchTitle && !matchCat) return false;
       }
 
-      // 2. Category Filter (Case-insensitive matching)
       if (category && product.category?.toLowerCase() !== category.toLowerCase()) {
         return false;
       }
 
-      // 3. Size Filter
       if (selectedSize && !product.sizes?.includes(selectedSize)) {
         return false;
       }
 
-      // 4. Max Price Filter (Compares against final discounted price)
       const rawPrice = Number(product.price) || 0;
       const rawOffer = Number(product.offer) || 0;
       const finalPrice = rawOffer > 0 ? rawPrice - (rawPrice * rawOffer) / 100 : rawPrice;
@@ -114,6 +104,7 @@ function CatalogContent() {
 
   const handleCategorySelect = (selectedCat) => {
     setCategory(selectedCat);
+    setShowMobileFilters(false);
     if (selectedCat === '') {
       router.push('/catalog');
     } else {
@@ -137,7 +128,6 @@ function CatalogContent() {
     };
 
     addToCart(itemToAdd, defaultSize, defaultColor, 1);
-
     setAddedId(product._id);
     setTimeout(() => setAddedId(null), 1500);
   };
@@ -147,6 +137,7 @@ function CatalogContent() {
     setCategory('');
     setSelectedSize('');
     setMaxPrice(50000);
+    setShowMobileFilters(false);
     router.push('/catalog');
   };
 
@@ -163,108 +154,141 @@ function CatalogContent() {
           <p className="text-gray-600 text-sm mt-1">Discover modern apparel tailored for everyday comfort.</p>
         </div>
 
-        <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80">
-          <input
-            type="text"
-            placeholder="Search clothes..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-sm text-gray-900 focus:bg-white focus:outline-none focus:border-indigo-600 transition"
-          />
-          <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
-        </form>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* Mobile Filter Trigger Button */}
+          <button
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-bold transition shrink-0"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span>Filters</span>
+          </button>
+
+          <form onSubmit={handleSearchSubmit} className="relative flex-1 md:w-80">
+            <input
+              type="text"
+              placeholder="Search clothes..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-sm text-gray-900 focus:bg-white focus:outline-none focus:border-indigo-600 transition"
+            />
+            <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
+          </form>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-8">
-        {/* Left Sidebar Filters */}
-        <aside className="lg:col-span-1 space-y-6 bg-gray-50 p-6 rounded-2xl border border-gray-200 h-fit sticky top-20 self-start">
+        {/* Sidebar Filters (Responsive Drawer on Mobile, Sticky on Desktop) */}
+        <aside
+          className={`fixed inset-0 z-50 bg-white p-6 overflow-y-auto transition-transform duration-300 lg:static lg:z-auto lg:translate-x-0 lg:bg-gray-50 lg:p-6 lg:rounded-2xl lg:border lg:border-gray-200 lg:h-fit lg:sticky lg:top-20 ${
+            showMobileFilters ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
+        >
           <div className="flex items-center justify-between pb-4 border-b border-gray-200">
             <div className="flex items-center space-x-2 font-bold text-gray-900 text-base">
               <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
               <span>Filters</span>
             </div>
-            <button
-              onClick={clearFilters}
-              className="text-xs text-indigo-600 font-bold hover:underline flex items-center space-x-1"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset All</span>
-            </button>
-          </div>
-
-          {/* Category Filter */}
-          <div>
-            <h3 className="text-sm font-bold text-gray-900 mb-3">Category</h3>
-            <div className="space-y-1.5">
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => handleCategorySelect('')}
-                className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition ${
-                  category === ''
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                    : 'text-gray-700 hover:bg-gray-200/60'
-                }`}
+                onClick={clearFilters}
+                className="text-xs text-indigo-600 font-bold hover:underline flex items-center space-x-1"
               >
-                All Categories
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
               </button>
-              {allCategories.map((cat) => {
-                const isSelected = category.toLowerCase() === cat.toLowerCase();
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => handleCategorySelect(cat)}
-                    className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition ${
-                      isSelected
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                        : 'text-gray-700 hover:bg-gray-200/60'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                className="lg:hidden p-1 text-gray-500 hover:text-gray-900"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
           </div>
 
-          {/* Size Filter */}
-          <div>
-            <h3 className="text-sm font-bold text-gray-900 mb-3">Size</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {sizes.map((sz) => {
-                const isSelected = selectedSize === sz;
-                return (
-                  <button
-                    key={sz}
-                    onClick={() => setSelectedSize(isSelected ? '' : sz)}
-                    className={`py-1.5 text-xs font-bold rounded-xl border transition ${
-                      isSelected
-                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    {sz}
-                  </button>
-                );
-              })}
+          <div className="space-y-6 mt-6 lg:mt-4">
+            {/* Category Filter */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 mb-3">Category</h3>
+              <div className="space-y-1.5">
+                <button
+                  onClick={() => handleCategorySelect('')}
+                  className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition ${
+                    category === ''
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                      : 'text-gray-700 hover:bg-gray-200/60'
+                  }`}
+                >
+                  All Categories
+                </button>
+                {allCategories.map((cat) => {
+                  const isSelected = category.toLowerCase() === cat.toLowerCase();
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => handleCategorySelect(cat)}
+                      className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition ${
+                        isSelected
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                          : 'text-gray-700 hover:bg-gray-200/60'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          {/* Price Range Filter */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-bold text-gray-900">Max Price</h3>
-              <span className="text-xs font-black text-indigo-600">
-                ₹{Number(maxPrice).toLocaleString('en-IN')}
-              </span>
+            {/* Size Filter */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 mb-3">Size</h3>
+              <div className="grid grid-cols-3 gap-2">
+                {sizes.map((sz) => {
+                  const isSelected = selectedSize === sz;
+                  return (
+                    <button
+                      key={sz}
+                      onClick={() => setSelectedSize(isSelected ? '' : sz)}
+                      className={`py-2 text-xs font-bold rounded-xl border transition ${
+                        isSelected
+                          ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                      }`}
+                    >
+                      {sz}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <input
-              type="range"
-              min="300"
-              max="50000"
-              step="500"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
-              className="w-full accent-indigo-600 cursor-pointer"
-            />
+
+            {/* Price Range Filter */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-bold text-gray-900">Max Price</h3>
+                <span className="text-xs font-black text-indigo-600">
+                  ₹{Number(maxPrice).toLocaleString('en-IN')}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="300"
+                max="50000"
+                step="500"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(Number(e.target.value))}
+                className="w-full accent-indigo-600 cursor-pointer"
+              />
+            </div>
+
+            {/* Close drawer button on mobile */}
+            <button
+              onClick={() => setShowMobileFilters(false)}
+              className="w-full lg:hidden py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-md mt-4"
+            >
+              Apply Filters
+            </button>
           </div>
         </aside>
 
@@ -327,14 +351,12 @@ function CatalogContent() {
                           </div>
                         )}
 
-                        {/* Category Tag */}
                         {product.category && (
                           <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-[10px] font-bold text-gray-900 px-2 py-0.5 rounded-md border border-gray-200 uppercase">
                             {product.category}
                           </span>
                         )}
 
-                        {/* Offer Badge Overlay */}
                         {hasOffer && (
                           <span className="absolute bottom-3 left-3 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md">
                             {rawOffer}% OFF
@@ -343,7 +365,6 @@ function CatalogContent() {
                       </div>
                     </Link>
 
-                    {/* Wishlist Heart Icon Button */}
                     <button
                       onClick={(e) => toggleWishlist(product, e)}
                       className="absolute top-3 right-3 p-2 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-gray-100 hover:scale-110 transition z-10"
@@ -368,7 +389,6 @@ function CatalogContent() {
                         </p>
                       </div>
 
-                      {/* Price Container */}
                       <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
                         <div className="flex items-baseline space-x-1.5">
                           <span className="text-base font-black text-gray-900">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ShoppingBag, Truck, RefreshCw, ShieldCheck, Sparkles, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, ShoppingBag, Truck, RefreshCw, ShieldCheck, Sparkles, Check } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 export default function HomePage() {
@@ -53,7 +53,7 @@ export default function HomePage() {
 
   const displayProducts = products.length > 0 ? [...products, ...products, ...products] : [];
 
-  // Faster, reliable smooth auto-scroll loop
+  // Continuous smooth auto-scroll loop
   useEffect(() => {
     if (loading || displayProducts.length === 0 || isPaused) return;
 
@@ -64,20 +64,12 @@ export default function HomePage() {
       if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
         container.scrollLeft = 0;
       } else {
-        container.scrollLeft += 2.5; // Faster speed
+        container.scrollLeft += 2;
       }
-    }, 16); // 60fps ticker
+    }, 16);
 
     return () => clearInterval(interval);
   }, [loading, displayProducts, isPaused]);
-
-  // Working Navigation Arrow Click Handler
-  const scroll = (direction) => {
-    if (scrollRef.current) {
-      const scrollAmount = direction === 'left' ? -320 : 350;
-      scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  };
 
   const handleQuickAdd = (product, finalPrice, e) => {
     e.preventDefault();
@@ -219,30 +211,10 @@ export default function HomePage() {
             <p className="text-gray-500 text-sm mt-1">Handpicked favorites from our latest catalog.</p>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <Link href="/catalog" className="text-indigo-600 font-bold text-sm hover:underline hidden sm:flex items-center space-x-1 mr-2">
-              <span>View Catalog</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-
-            {/* Working Scroll Left Button */}
-            <button
-              onClick={() => scroll('left')}
-              className="p-3 rounded-full bg-gray-100 hover:bg-indigo-600 hover:text-white text-gray-800 active:scale-95 transition shadow-sm border border-gray-200"
-              aria-label="Scroll Left"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-
-            {/* Working Scroll Right Button */}
-            <button
-              onClick={() => scroll('right')}
-              className="p-3 rounded-full bg-gray-100 hover:bg-indigo-600 hover:text-white text-gray-800 active:scale-95 transition shadow-sm border border-gray-200"
-              aria-label="Scroll Right"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+          <Link href="/catalog" className="text-indigo-600 font-bold text-sm hover:underline flex items-center space-x-1">
+            <span>View Catalog</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
 
         {loading ? (

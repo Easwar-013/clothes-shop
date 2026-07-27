@@ -10,8 +10,9 @@ export default function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addedId, setAddedId] = useState(null);
+  const [isPaused, setIsPaused] = useState(false);
 
-  // Scroll Reference for Left/Right Navigation Buttons
+  // Scroll Reference for Navigation & Auto-scroll
   const scrollRef = useRef(null);
 
   const categories = [
@@ -40,9 +41,7 @@ export default function HomePage() {
             .filter((p) => !p.offer || Number(p.offer) === 0)
             .sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0));
 
-          // 3. Combine items for trending now list
           const combined = [...offerProducts, ...nonOfferProducts];
-
           setProducts(combined);
         }
       } catch (err) {
@@ -54,6 +53,28 @@ export default function HomePage() {
 
     fetchProducts();
   }, []);
+
+  // Duplicate items array to make continuous looping smooth
+  const displayProducts = products.length > 0 ? [...products, ...products, ...products] : [];
+
+  // Continuous Auto-Scroll Loop that works alongside manual scroll
+  useEffect(() => {
+    if (loading || displayProducts.length === 0 || isPaused) return;
+
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const interval = setInterval(() => {
+      // Loop back to start if reached the end
+      if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 5) {
+        container.scrollLeft = 0;
+      } else {
+        container.scrollLeft += 1;
+      }
+    }, 25);
+
+    return () => clearInterval(interval);
+  }, [loading, displayProducts, isPaused]);
 
   // Smooth Horizontal Scroll Handler for Left / Right Buttons
   const scroll = (direction) => {
@@ -195,7 +216,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. Bidirectionally Scrollable Trending Now Section */}
+      {/* 4. Trending Now Section: Auto-Moving + Scrollable */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex justify-between items-end">
           <div>
@@ -240,10 +261,14 @@ export default function HomePage() {
         ) : (
           <div
             ref={scrollRef}
-            className="flex space-x-6 overflow-x-auto scroll-smooth py-2 px-1 snap-x snap-mandatory"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setIsPaused(false)}
+            className="flex space-x-6 overflow-x-auto py-2 px-1 scroll-smooth"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {products.map((product) => {
+            {displayProducts.map((product, idx) => {
               const originalPrice = Number(product.price) || 0;
               const offerPercent = Number(product.offer) || 0;
               const hasOffer = offerPercent > 0;
@@ -254,8 +279,8 @@ export default function HomePage() {
 
               return (
                 <div
-                  key={product._id}
-                  className="w-[280px] shrink-0 snap-start group bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                  key={`${product._id}-${idx}`}
+                  className="w-[280px] shrink-0 group bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
                 >
                   <Link href={`/product/${product._id}`} className="block relative">
                     <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">

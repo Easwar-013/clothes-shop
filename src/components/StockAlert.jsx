@@ -3,28 +3,47 @@
 import { useState } from "react";
 import { AlertTriangle, Bell, CheckCircle2, XCircle } from "lucide-react";
 
-export default function StockAlert({ stock = 0, productName = "" }) {
+export default function StockAlert({
+  stock = 0,
+  productId = "",
+  productName = "",
+}) {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [showNotifyForm, setShowNotifyForm] = useState(false);
 
   const isOutOfStock = stock === 0;
   const isLowStock = stock > 0 && stock <= 5;
 
-  const handleNotifySubmit = (e) => {
+  const handleNotifySubmit = async (e) => {
     e.preventDefault();
     if (!email) return;
 
-    // Simulate stock alert notification subscription
-    setIsSubscribed(true);
-    setTimeout(() => {
-      setShowNotifyForm(false);
-    }, 2500);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/stock-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, productId, productName }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setIsSubscribed(true);
+      } else {
+        alert(data.error || "Failed to register stock alert.");
+      }
+    } catch (err) {
+      alert("Error sending request. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="space-y-3">
-      {/* 1. Badge Display */}
+      {/* Badge Display */}
       {isOutOfStock ? (
         <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-50 text-red-700 border border-red-200">
           <XCircle className="w-4 h-4 text-red-600 animate-pulse" />
@@ -33,9 +52,7 @@ export default function StockAlert({ stock = 0, productName = "" }) {
       ) : isLowStock ? (
         <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
           <AlertTriangle className="w-4 h-4 text-amber-600" />
-          <span>
-            Hurry! Only {stock} item{stock > 1 ? "s" : ""} left in stock
-          </span>
+          <span>Hurry! Only {stock} left in stock</span>
         </div>
       ) : (
         <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -44,7 +61,7 @@ export default function StockAlert({ stock = 0, productName = "" }) {
         </div>
       )}
 
-      {/* 2. Notify Me Form for Out-of-Stock Products */}
+      {/* Notify Form */}
       {isOutOfStock && (
         <div className="mt-2">
           {!showNotifyForm ? (
@@ -59,8 +76,7 @@ export default function StockAlert({ stock = 0, productName = "" }) {
             <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-bold flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
-                We'll email you as soon as {productName || "this item"} is
-                restocked!
+                Confirmation email sent! We'll notify you when restocked.
               </span>
             </div>
           ) : (
@@ -78,9 +94,10 @@ export default function StockAlert({ stock = 0, productName = "" }) {
               />
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shrink-0"
+                disabled={loading}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shrink-0 disabled:opacity-50"
               >
-                Notify Me
+                {loading ? "Sending..." : "Notify Me"}
               </button>
             </form>
           )}

@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useSession } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
+import StockAlert from '@/components/StockAlert';
 import { 
   ShoppingBag, 
   Check, 
@@ -14,7 +15,6 @@ import {
   Sparkles,
   MessageSquare,
   CheckCircle2,
-  Bell,
   Camera,
   X,
   Trash2
@@ -41,11 +41,6 @@ export default function ProductDetailPage({ params: paramsPromise }) {
   const [reviewImages, setReviewImages] = useState([]);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState(null);
-
-  // Stock Alert State
-  const [notifyEmail, setNotifyEmail] = useState('');
-  const [submittingAlert, setSubmittingAlert] = useState(false);
-  const [alertSuccess, setAlertSuccess] = useState(false);
 
   // Recommendations & Recently Viewed States
   const [recommendations, setRecommendations] = useState([]);
@@ -185,7 +180,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
   }, [product, finalPrice]);
 
   const handleAddToCart = () => {
-    if (!product) return;
+    if (!product || product.stock === 0) return;
     addToCart({ ...product, price: finalPrice }, selectedSize, selectedColor, quantity);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -285,35 +280,12 @@ export default function ProductDetailPage({ params: paramsPromise }) {
       const res = await fetch(`/api/reviews?id=${reviewId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        fetchReviews(); // Reload dynamic ratings and review list
+        fetchReviews();
       } else {
         alert(data.error || 'Failed to delete review.');
       }
     } catch (e) {
       console.error('Error deleting review:', e);
-    }
-  };
-
-  const handleStockAlertSubmit = async (e) => {
-    e.preventDefault();
-    const emailToUse = session?.user?.email || notifyEmail;
-    if (!emailToUse) return;
-
-    setSubmittingAlert(true);
-    try {
-      const res = await fetch('/api/stock-alert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: id, email: emailToUse }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAlertSuccess(true);
-      }
-    } catch (err) {
-      console.error('Error setting stock alert:', err);
-    } finally {
-      setSubmittingAlert(false);
     }
   };
 
@@ -426,23 +398,14 @@ export default function ProductDetailPage({ params: paramsPromise }) {
               )}
             </div>
 
-            <div className="mt-3">
-              {product.stock > 10 ? (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  In Stock ({product.stock} available)
-                </span>
-              ) : product.stock > 0 ? (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                  Low Stock (Only {product.stock} left)
-                </span>
-              ) : (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
-                  Out of Stock
-                </span>
-              )}
+            {/* Integrated StockAlert Component */}
+            <div className="mt-4">
+              <StockAlert stock={product.stock ?? 0} productName={product.title} />
             </div>
 
-            <p className="text-gray-600 mt-6 leading-relaxed text-sm">{product.description}</p>
+            <p className="text-gray-600 mt-5 leading-relaxed text-sm">
+              {product.description || 'No description provided.'}
+            </p>
 
             <hr className="my-6 border-gray-100" />
 
@@ -515,48 +478,21 @@ export default function ProductDetailPage({ params: paramsPromise }) {
               </div>
             )}
 
-            {product.stock > 0 ? (
-              <button
-                onClick={handleAddToCart}
-                className={`w-full py-4 rounded-2xl font-bold text-sm transition flex items-center justify-center space-x-2 shadow-lg ${
-                  added
-                    ? 'bg-green-600 text-white shadow-green-200'
-                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
-                }`}
-              >
-                {added ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
-                <span>{added ? 'Added to Cart!' : 'Add to Cart'}</span>
-              </button>
-            ) : alertSuccess ? (
-              <div className="p-4 bg-emerald-50 text-emerald-800 rounded-2xl border border-emerald-200 text-xs font-bold text-center flex items-center justify-center space-x-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>We'll notify you as soon as this item is restocked!</span>
-              </div>
-            ) : (
-              <form onSubmit={handleStockAlertSubmit} className="space-y-3 bg-gray-50 p-4 rounded-2xl border border-gray-200">
-                <div className="flex items-center space-x-2 text-gray-900 font-bold text-xs">
-                  <Bell className="w-4 h-4 text-indigo-600" />
-                  <span>Notify Me When Back in Stock</span>
-                </div>
-                {!session && (
-                  <input
-                    type="email"
-                    required
-                    value={notifyEmail}
-                    onChange={(e) => setNotifyEmail(e.target.value)}
-                    placeholder="Enter your email address"
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs focus:outline-none focus:border-indigo-600"
-                  />
-                )}
-                <button
-                  type="submit"
-                  disabled={submittingAlert}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shadow-md disabled:opacity-50"
-                >
-                  {submittingAlert ? 'Saving alert...' : 'Notify Me'}
-                </button>
-              </form>
-            )}
+            {/* Add To Cart Button */}
+            <button
+              onClick={handleAddToCart}
+              disabled={product.stock === 0}
+              className={`w-full py-4 rounded-2xl font-bold text-sm transition flex items-center justify-center space-x-2 shadow-lg ${
+                product.stock === 0
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                  : added
+                  ? 'bg-green-600 text-white shadow-green-200'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
+              }`}
+            >
+              {added ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
+              <span>{product.stock === 0 ? 'Out of Stock' : added ? 'Added to Cart!' : 'Add to Cart'}</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50/70 rounded-2xl border border-gray-100 text-center">
@@ -708,7 +644,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
         </section>
       )}
 
-      {/* Customer Reviews & Ratings Section (Bottom of Page) */}
+      {/* Customer Reviews & Ratings Section */}
       <section className="mt-20 pt-10 border-t border-gray-100">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div>
@@ -732,7 +668,9 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                   />
                 ))}
               </div>
-              <p className="text-xs text-gray-500 font-bold mt-0.5">Based on {totalReviews} review{totalReviews === 1 ? '' : 's'}</p>
+              <p className="text-xs text-gray-500 font-bold mt-0.5">
+                Based on {totalReviews} review{totalReviews === 1 ? '' : 's'}
+              </p>
             </div>
           </div>
         </div>
@@ -838,7 +776,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                 const canDelete =
                   session?.user?.email === rev.userEmail ||
                   session?.user?.role === 'admin' ||
-                  !rev.userEmail; // allows deleting old test entries easily
+                  !rev.userEmail;
 
                 return (
                   <div key={rev._id} className="p-5 bg-white rounded-2xl border border-gray-200 space-y-3 relative group">
@@ -862,7 +800,6 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                           ))}
                         </div>
 
-                        {/* Delete Review Button */}
                         {canDelete && (
                           <button
                             onClick={() => handleDeleteReview(rev._id)}
@@ -877,7 +814,6 @@ export default function ProductDetailPage({ params: paramsPromise }) {
 
                     <p className="text-gray-600 text-xs leading-relaxed">{rev.comment}</p>
 
-                    {/* Customer Photo Gallery */}
                     {rev.images && rev.images.length > 0 && (
                       <div className="flex flex-wrap gap-2 pt-1">
                         {rev.images.map((img, imgIdx) => (

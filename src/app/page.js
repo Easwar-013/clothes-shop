@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ShoppingBag, Truck, RefreshCw, ShieldCheck, Sparkles, Check } from 'lucide-react';
+import { ArrowRight, ShoppingBag, Truck, RefreshCw, ShieldCheck, Sparkles, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 export default function HomePage() {
@@ -10,6 +10,9 @@ export default function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addedId, setAddedId] = useState(null);
+
+  // Scroll Reference for Left/Right Navigation Buttons
+  const scrollRef = useRef(null);
 
   const categories = [
     { name: 'Shirts', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?q=80&w=800&auto=format&fit=crop', count: '12+ Items' },
@@ -32,15 +35,15 @@ export default function HomePage() {
             .filter((p) => Number(p.offer) > 0)
             .sort((a, b) => Number(b.offer) - Number(a.offer));
 
-          // 2. Filter and sort non-offer products by latest deployment (newest date first)
+          // 2. Filter and sort non-offer products by latest deployment
           const nonOfferProducts = rawProducts
             .filter((p) => !p.offer || Number(p.offer) === 0)
             .sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0));
 
-          // 3. Merge offered items first, fill remaining slots with latest non-offered items up to 6
-          const combinedTop6 = [...offerProducts, ...nonOfferProducts].slice(0, 6);
+          // 3. Combine items for trending now list
+          const combined = [...offerProducts, ...nonOfferProducts];
 
-          setProducts(combinedTop6);
+          setProducts(combined);
         }
       } catch (err) {
         console.error('Failed to load products', err);
@@ -51,6 +54,14 @@ export default function HomePage() {
 
     fetchProducts();
   }, []);
+
+  // Smooth Horizontal Scroll Handler for Left / Right Buttons
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+      const scrollAmount = direction === 'left' ? -350 : 350;
+      scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   const handleQuickAdd = (product, finalPrice, e) => {
     e.preventDefault();
@@ -70,31 +81,8 @@ export default function HomePage() {
     setTimeout(() => setAddedId(null), 1500);
   };
 
-  // Duplicate the 6 items for continuous seamless marquee loop
-  const marqueeList = products.length > 0 ? [...products, ...products, ...products, ...products] : [];
-
   return (
     <div className="space-y-16 pb-16 bg-white text-gray-900 overflow-x-hidden">
-      {/* Keyframe Animation with slower duration (60s) */}
-      <style jsx global>{`
-        @keyframes marqueeScroll {
-          0% {
-            transform: translateX(0%);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-        .animate-marquee-scroll {
-          display: flex;
-          width: max-content;
-          animation: marqueeScroll 60s linear infinite;
-        }
-        .animate-marquee-scroll:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
-
       {/* 1. Hero Section */}
       <section className="relative bg-gray-900 text-white overflow-hidden py-24 lg:py-32">
         <div className="absolute inset-0 z-0 opacity-40">
@@ -207,113 +195,136 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. Trending Now Section */}
+      {/* 4. Bidirectionally Scrollable Trending Now Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex justify-between items-end">
           <div>
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Trending Now</h2>
             <p className="text-gray-500 text-sm mt-1">Handpicked favorites from our latest catalog.</p>
           </div>
-          <Link href="/catalog" className="text-indigo-600 font-bold text-sm hover:underline flex items-center space-x-1">
-            <span>View Catalog</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+
+          <div className="flex items-center space-x-3">
+            <Link href="/catalog" className="text-indigo-600 font-bold text-sm hover:underline hidden sm:flex items-center space-x-1 mr-2">
+              <span>View Catalog</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+
+            {/* Left Scroll Navigation Button */}
+            <button
+              onClick={() => scroll('left')}
+              className="p-2.5 rounded-full bg-gray-100 hover:bg-indigo-600 hover:text-white text-gray-700 transition shadow-sm"
+              aria-label="Scroll Left"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            {/* Right Scroll Navigation Button */}
+            <button
+              onClick={() => scroll('right')}
+              className="p-2.5 rounded-full bg-gray-100 hover:bg-indigo-600 hover:text-white text-gray-700 transition shadow-sm"
+              aria-label="Scroll Right"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {loading ? (
           <div className="py-12 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
           </div>
-        ) : marqueeList.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed text-gray-500">
+        ) : products.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed text-gray-500 text-sm">
             No items available right now.
           </div>
         ) : (
-          <div className="w-full overflow-hidden rounded-2xl">
-            <div className="animate-marquee-scroll gap-6 py-1">
-              {marqueeList.map((product, idx) => {
-                const originalPrice = Number(product.price) || 0;
-                const offerPercent = Number(product.offer) || 0;
-                const hasOffer = offerPercent > 0;
+          <div
+            ref={scrollRef}
+            className="flex space-x-6 overflow-x-auto scroll-smooth py-2 px-1 snap-x snap-mandatory"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {products.map((product) => {
+              const originalPrice = Number(product.price) || 0;
+              const offerPercent = Number(product.offer) || 0;
+              const hasOffer = offerPercent > 0;
 
-                const finalPrice = hasOffer
-                  ? Number((originalPrice - (originalPrice * offerPercent) / 100).toFixed(2))
-                  : originalPrice;
+              const finalPrice = hasOffer
+                ? Number((originalPrice - (originalPrice * offerPercent) / 100).toFixed(2))
+                : originalPrice;
 
-                return (
-                  <div
-                    key={`${product._id}-${idx}`}
-                    className="w-[270px] shrink-0 group bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
-                  >
-                    <Link href={`/product/${product._id}`} className="block relative">
-                      <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">
-                        {product.images?.[0] ? (
-                          <img
-                            src={product.images[0]}
-                            alt={product.title}
-                            className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                            No Image
-                          </div>
-                        )}
-
-                        {product.category && (
-                          <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-xs font-bold text-gray-900 px-2.5 py-1 rounded-md border border-gray-200">
-                            {product.category}
-                          </span>
-                        )}
-
-                        {/* Offer Badge Overlay */}
-                        {hasOffer && (
-                          <span className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md">
-                            {offerPercent}% OFF
-                          </span>
-                        )}
-                      </div>
-                    </Link>
-
-                    <div className="p-4 flex flex-col flex-1 justify-between">
-                      <div>
-                        <Link href={`/product/${product._id}`}>
-                          <h3 className="font-bold text-gray-900 text-base line-clamp-1 hover:text-indigo-600 transition">
-                            {product.title}
-                          </h3>
-                        </Link>
-                        <p className="text-gray-500 text-xs mt-1 line-clamp-1">{product.description}</p>
-                      </div>
-
-                      {/* Price Row */}
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-                        <div className="flex items-baseline space-x-1.5">
-                          <span className="text-lg font-black text-gray-900">
-                            ₹{finalPrice.toLocaleString('en-IN')}
-                          </span>
-                          {hasOffer && (
-                            <span className="text-xs font-bold text-gray-400 line-through">
-                              ₹{originalPrice.toLocaleString('en-IN')}
-                            </span>
-                          )}
+              return (
+                <div
+                  key={product._id}
+                  className="w-[280px] shrink-0 snap-start group bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                >
+                  <Link href={`/product/${product._id}`} className="block relative">
+                    <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">
+                      {product.images?.[0] ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.title}
+                          className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                          No Image
                         </div>
+                      )}
 
-                        <button
-                          onClick={(e) => handleQuickAdd(product, finalPrice, e)}
-                          className={`p-2.5 rounded-xl transition flex items-center justify-center ${
-                            addedId === product._id
-                              ? 'bg-green-600 text-white'
-                              : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
-                          }`}
-                          aria-label="Quick Add to Cart"
-                        >
-                          {addedId === product._id ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
-                        </button>
+                      {product.category && (
+                        <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-xs font-bold text-gray-900 px-2.5 py-1 rounded-md border border-gray-200">
+                          {product.category}
+                        </span>
+                      )}
+
+                      {/* Offer Badge Overlay */}
+                      {hasOffer && (
+                        <span className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md">
+                          {offerPercent}% OFF
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+
+                  <div className="p-4 flex flex-col flex-1 justify-between">
+                    <div>
+                      <Link href={`/product/${product._id}`}>
+                        <h3 className="font-bold text-gray-900 text-base line-clamp-1 hover:text-indigo-600 transition">
+                          {product.title}
+                        </h3>
+                      </Link>
+                      <p className="text-gray-500 text-xs mt-1 line-clamp-1">{product.description || 'No description provided.'}</p>
+                    </div>
+
+                    {/* Price Row */}
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                      <div className="flex items-baseline space-x-1.5">
+                        <span className="text-lg font-black text-gray-900">
+                          ₹{finalPrice.toLocaleString('en-IN')}
+                        </span>
+                        {hasOffer && (
+                          <span className="text-xs font-bold text-gray-400 line-through">
+                            ₹{originalPrice.toLocaleString('en-IN')}
+                          </span>
+                        )}
                       </div>
+
+                      <button
+                        onClick={(e) => handleQuickAdd(product, finalPrice, e)}
+                        className={`p-2.5 rounded-xl transition flex items-center justify-center ${
+                          addedId === product._id
+                            ? 'bg-green-600 text-white'
+                            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
+                        }`}
+                        aria-label="Quick Add to Cart"
+                      >
+                        {addedId === product._id ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { Search, Filter, ShoppingBag, Check, SlidersHorizontal, Heart, RotateCcw, X } from 'lucide-react';
+import { Search, Filter, ShoppingBag, Check, SlidersHorizontal, Heart, RotateCcw, X, Loader2 } from 'lucide-react';
 
 function CatalogContent() {
   const { addToCart } = useCart();
@@ -14,7 +14,8 @@ function CatalogContent() {
   const router = useRouter();
 
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState(null);
   const [addedId, setAddedId] = useState(null);
   
@@ -34,56 +35,75 @@ function CatalogContent() {
     setCategory(urlCategory);
   }, [searchParams]);
 
-  // Core API fetcher
-  const fetchProducts = useCallback(async (querySearch, queryCategory) => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Fetch initial catalog data once on load
+  useEffect(() => {
+    async function fetchInitialProducts() {
+      try {
+        setInitialLoading(true);
+        const res = await fetch('/api/products');
+        if (!res.ok) throw new Error(`HTTP Error Status: ${res.status}`);
+        const data = await res.json();
+        if (data.success) {
+          const fetchedProducts = data.products || [];
+          setProducts(fetchedProducts);
 
+          const extractedCats = Array.from(
+            new Set(fetchedProducts.map((p) => p.category).filter(Boolean))
+          );
+          if (extractedCats.length > 0) {
+            setDynamicCategories((prev) => Array.from(new Set([...prev, ...extractedCats])));
+          }
+        } else {
+          setError(data.error || 'Failed to fetch products');
+        }
+      } catch (err) {
+        console.error('Catalog Fetch Failure:', err);
+        setError(err.message);
+      } finally {
+        setInitialLoading(false);
+      }
+    }
+
+    fetchInitialProducts();
+  }, []);
+
+  // Background search sync (silent fetch without full-page spinner)
+  const fetchProductsSilent = useCallback(async (querySearch, queryCategory) => {
+    try {
+      setIsSearching(true);
       const query = new URLSearchParams();
       if (querySearch) query.set('search', querySearch);
       if (queryCategory) query.set('category', queryCategory);
 
       const url = `/api/products?${query.toString()}`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP Error Status: ${res.status}`);
+      if (!res.ok) return;
 
       const data = await res.json();
-      if (data.success) {
-        const fetchedProducts = data.products || [];
-        setProducts(fetchedProducts);
-
-        const extractedCats = Array.from(
-          new Set(fetchedProducts.map((p) => p.category).filter(Boolean))
-        );
-        if (extractedCats.length > 0) {
-          setDynamicCategories((prev) => Array.from(new Set([...prev, ...extractedCats])));
-        }
-      } else {
-        setError(data.error || 'Failed to fetch products');
+      if (data.success && data.products) {
+        setProducts(data.products);
       }
     } catch (err) {
-      console.error('Catalog Fetch Failure:', err);
-      setError(err.message);
+      console.error('Silent Search Fetch Error:', err);
     } finally {
-      setLoading(false);
+      setIsSearching(false);
     }
   }, []);
 
-  // Debounced Real-Time Search Effect (triggers as user types)
+  // Debounced search trigger for background network sync
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchProducts(search, category);
+      fetchProductsSilent(search, category);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [search, category, fetchProducts]);
+  }, [search, category, fetchProductsSilent]);
 
-  // Client-side filtering for fast instant feedback
+  // Client-side real-time instant filtering
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       if (search) {
-        const query = search.toLowerCase();
+        const query = search.toLowerCase().trim();
         const matchTitle = product.title?.toLowerCase().includes(query);
         const matchCat = product.category?.toLowerCase().includes(query);
         if (!matchTitle && !matchCat) return false;
@@ -149,7 +169,7 @@ function CatalogContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white text-gray-900 min-h-screen">
-      {/* Header & Instant Search Bar */}
+      {/* Header & Real-time Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-gray-200">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Shop Collection</h1>
@@ -166,7 +186,7 @@ function CatalogContent() {
             <span>Filters</span>
           </button>
 
-          {/* Real-time Input Box */}
+          {/* Real-time Search Input with Inline Spinner */}
           <div className="relative flex-1 md:w-80">
             <input
               type="text"
@@ -177,14 +197,18 @@ function CatalogContent() {
             />
             <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
             
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-3 top-3 text-gray-400 hover:text-gray-700 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+            <div className="absolute right-3 top-3 flex items-center gap-1">
+              {isSearching ? (
+                <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+              ) : search ? (
+                <button
+                  onClick={() => setSearch('')}
+                  className="text-gray-400 hover:text-gray-700 transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
@@ -311,10 +335,10 @@ function CatalogContent() {
             </div>
           )}
 
-          {loading ? (
+          {initialLoading ? (
             <div className="py-20 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-              <p className="mt-4 text-gray-600 font-medium text-xs">Searching catalog...</p>
+              <p className="mt-4 text-gray-600 font-medium text-xs">Loading collection...</p>
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-300 space-y-3">

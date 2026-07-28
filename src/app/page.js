@@ -53,7 +53,7 @@ export default function HomePage() {
 
   const displayProducts = products.length > 0 ? [...products, ...products, ...products] : [];
 
-  // Continuous smooth auto-scroll loop
+  // Continuous smooth & slow auto-scroll loop
   useEffect(() => {
     if (loading || displayProducts.length === 0 || isPaused) return;
 
@@ -64,9 +64,9 @@ export default function HomePage() {
       if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
         container.scrollLeft = 0;
       } else {
-        container.scrollLeft += 2;
+        container.scrollLeft += 1; // Decreased step size for slower, gentler scroll
       }
-    }, 16);
+    }, 30); // 30ms interval for smooth relaxed movement
 
     return () => clearInterval(interval);
   }, [loading, displayProducts, isPaused]);

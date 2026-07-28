@@ -34,14 +34,15 @@ function CatalogContent() {
     setCategory(urlCategory);
   }, [searchParams]);
 
-  const fetchProducts = useCallback(async () => {
+  // Core API fetcher
+  const fetchProducts = useCallback(async (querySearch, queryCategory) => {
     try {
       setLoading(true);
       setError(null);
 
       const query = new URLSearchParams();
-      if (search) query.set('search', search);
-      if (category) query.set('category', category);
+      if (querySearch) query.set('search', querySearch);
+      if (queryCategory) query.set('category', queryCategory);
 
       const url = `/api/products?${query.toString()}`;
       const res = await fetch(url);
@@ -67,12 +68,18 @@ function CatalogContent() {
     } finally {
       setLoading(false);
     }
-  }, [search, category]);
+  }, []);
 
+  // Debounced Real-Time Search Effect (triggers as user types)
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    const timer = setTimeout(() => {
+      fetchProducts(search, category);
+    }, 300);
 
+    return () => clearTimeout(timer);
+  }, [search, category, fetchProducts]);
+
+  // Client-side filtering for fast instant feedback
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       if (search) {
@@ -112,11 +119,6 @@ function CatalogContent() {
     }
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    fetchProducts();
-  };
-
   const handleQuickAdd = (product, finalPrice, e) => {
     e.preventDefault();
     const defaultSize = product.sizes?.[0] || 'M';
@@ -147,7 +149,7 @@ function CatalogContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white text-gray-900 min-h-screen">
-      {/* Header & Search */}
+      {/* Header & Instant Search Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-gray-200">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Shop Collection</h1>
@@ -164,21 +166,31 @@ function CatalogContent() {
             <span>Filters</span>
           </button>
 
-          <form onSubmit={handleSearchSubmit} className="relative flex-1 md:w-80">
+          {/* Real-time Input Box */}
+          <div className="relative flex-1 md:w-80">
             <input
               type="text"
               placeholder="Search clothes..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-sm text-gray-900 focus:bg-white focus:outline-none focus:border-indigo-600 transition"
+              className="w-full pl-10 pr-9 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-sm text-gray-900 focus:bg-white focus:outline-none focus:border-indigo-600 transition"
             />
             <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
-          </form>
+            
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-700 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-8">
-        {/* Sidebar Filters (Responsive Drawer on Mobile, Sticky on Desktop) */}
+        {/* Sidebar Filters */}
         <aside
           className={`fixed inset-0 z-50 bg-white p-6 overflow-y-auto transition-transform duration-300 lg:static lg:z-auto lg:translate-x-0 lg:bg-gray-50 lg:p-6 lg:rounded-2xl lg:border lg:border-gray-200 lg:h-fit lg:sticky lg:top-20 ${
             showMobileFilters ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -291,7 +303,7 @@ function CatalogContent() {
           </div>
         </aside>
 
-        {/* Product Grid Area (2 items per row on mobile, 3 items per row on desktop) */}
+        {/* Product Grid Area */}
         <main className="lg:col-span-3">
           {error && (
             <div className="p-4 mb-6 bg-red-50 text-red-700 rounded-xl border border-red-200 text-sm font-medium">
@@ -302,20 +314,20 @@ function CatalogContent() {
           {loading ? (
             <div className="py-20 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-              <p className="mt-4 text-gray-600 font-medium text-xs">Loading collection...</p>
+              <p className="mt-4 text-gray-600 font-medium text-xs">Searching catalog...</p>
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-300 space-y-3">
               <Filter className="w-10 h-10 text-gray-400 mx-auto" />
-              <h3 className="text-lg font-bold text-gray-900">No products match your filter</h3>
+              <h3 className="text-lg font-bold text-gray-900">No products match your search</h3>
               <p className="text-gray-500 text-xs max-w-xs mx-auto">
-                Try raising the price slider or resetting size and category selections.
+                Try searching for another keyword or clearing your filters.
               </p>
               <button
                 onClick={clearFilters}
                 className="mt-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 transition shadow-md"
               >
-                Reset Filters
+                Reset Search & Filters
               </button>
             </div>
           ) : (

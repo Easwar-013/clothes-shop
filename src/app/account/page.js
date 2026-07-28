@@ -14,10 +14,12 @@ import {
   CheckCircle, 
   Truck, 
   PackageCheck,
-  XCircle
+  XCircle,
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 
-// Visual Stepper Tracker Component
+// Visual Stepper Tracker Component with Live Moving Fill & Shimmer Effect
 function OrderTimeline({ status = 'Pending' }) {
   const steps = [
     { label: 'Order Placed', icon: Clock, key: 'Pending' },
@@ -38,6 +40,7 @@ function OrderTimeline({ status = 'Pending' }) {
 
   const isCancelled = status === 'Cancelled';
   const currentIndex = getStepIndex(status);
+  const fillPercentage = (currentIndex / (steps.length - 1)) * 100;
 
   if (isCancelled) {
     return (
@@ -52,34 +55,38 @@ function OrderTimeline({ status = 'Pending' }) {
   }
 
   return (
-    <div className="w-full py-6 px-2 my-2 bg-gray-50/70 rounded-2xl border border-gray-100">
+    <div className="w-full py-6 px-4 my-2 bg-gray-50/80 rounded-2xl border border-gray-200/80 shadow-inner">
       <div className="flex items-center justify-between relative max-w-2xl mx-auto">
         {/* Background Track Line */}
-        <div className="absolute top-[18px] left-6 right-6 h-1 bg-gray-200 -translate-y-1/2 z-0" />
+        <div className="absolute top-[18px] left-6 right-6 h-1.5 bg-gray-200 -translate-y-1/2 z-0 rounded-full" />
 
-        {/* Active Progress Line */}
+        {/* Animated Progress Fill Line */}
         <div
-          className="absolute top-[18px] left-6 h-1 bg-indigo-600 -translate-y-1/2 z-0 transition-all duration-500 ease-in-out"
-          style={{ width: `calc(${(currentIndex / (steps.length - 1)) * 100}% - 24px)` }}
-        />
+          className="absolute top-[18px] left-6 h-1.5 bg-indigo-600 -translate-y-1/2 z-0 transition-all duration-1000 ease-in-out rounded-full overflow-hidden"
+          style={{ width: `calc(${fillPercentage}% - 20px)` }}
+        >
+          {/* Moving Light Shimmer Animation inside the active bar */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+        </div>
 
         {steps.map((step, idx) => {
           const Icon = step.icon;
           const isCompleted = idx <= currentIndex;
+          const isCurrent = idx === currentIndex;
 
           return (
             <div key={step.key} className="relative z-10 flex flex-col items-center">
               <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-700 ${
                   isCompleted
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-4 ring-indigo-50'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                     : 'bg-white text-gray-400 border border-gray-300'
-                }`}
+                } ${isCurrent ? 'ring-4 ring-indigo-100 scale-110' : ''}`}
               >
                 <Icon className="w-4.5 h-4.5" />
               </div>
               <span
-                className={`text-[11px] font-bold mt-2 text-center ${
+                className={`text-[11px] font-bold mt-2 text-center transition-colors duration-500 ${
                   isCompleted ? 'text-indigo-600 font-black' : 'text-gray-400'
                 }`}
               >
@@ -99,61 +106,74 @@ export default function AccountPage() {
   const [productImages, setProductImages] = useState({});
   const [expandedOrders, setExpandedOrders] = useState({});
   const [loading, setLoading] = useState(true);
+  const [isLiveUpdating, setIsLiveUpdating] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    async function fetchOrderHistory() {
-      if (status === 'loading') return;
+  // Core order fetcher with optional silent mode for polling
+  const fetchOrderHistory = async (silent = false) => {
+    if (status === 'loading') return;
 
-      if (!session) {
-        setLoading(false);
-        setError('Please sign in to view your order history.');
-        return;
-      }
+    if (!session) {
+      setLoading(false);
+      setError('Please sign in to view your order history.');
+      return;
+    }
 
-      try {
-        setLoading(true);
-        setError(null);
+    try {
+      if (!silent) setLoading(true);
+      else setIsLiveUpdating(true);
 
-        const userEmail = session.user?.email || '';
-        const userId = session.user?.id || session.user?._id || '';
+      const userEmail = session.user?.email || '';
+      const userId = session.user?.id || session.user?._id || '';
 
-        const res = await fetch('/api/user/orders', {
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-email': userEmail,
-            'x-user-id': userId,
-          },
-        });
+      const res = await fetch('/api/user/orders', {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail,
+          'x-user-id': userId,
+        },
+      });
 
-        const data = await res.json();
+      const data = await res.json();
 
-        if (res.ok && data.success) {
-          const fetchedOrders = data.orders || [];
-          setOrders(fetchedOrders);
+      if (res.ok && data.success) {
+        const fetchedOrders = data.orders || [];
+        setOrders(fetchedOrders);
 
-          // Auto-expand current active orders (Pending, Processing, Shipped)
+        // Auto-expand ongoing active orders on first load
+        if (!silent) {
           const autoExpandState = {};
           fetchedOrders.forEach((o) => {
             if (['Pending', 'Processing', 'Shipped'].includes(o.status)) {
               autoExpandState[o._id] = true;
             }
           });
-          setExpandedOrders(autoExpandState);
-
-          fetchMissingImages(fetchedOrders);
-        } else {
-          setError(data.error || 'Failed to fetch order history.');
+          setExpandedOrders((prev) => ({ ...autoExpandState, ...prev }));
+          fetchMissingImages();
         }
-      } catch (err) {
-        console.error('Error fetching orders:', err);
-        setError('Network error loading orders.');
-      } finally {
-        setLoading(false);
+      } else if (!silent) {
+        setError(data.error || 'Failed to fetch order history.');
       }
+    } catch (err) {
+      console.error('Error fetching real-time orders:', err);
+      if (!silent) setError('Network error loading orders.');
+    } finally {
+      setLoading(false);
+      setIsLiveUpdating(false);
     }
+  };
 
-    fetchOrderHistory();
+  // Real-time background polling effect (queries DB every 4 seconds)
+  useEffect(() => {
+    if (session) {
+      fetchOrderHistory(false);
+
+      const interval = setInterval(() => {
+        fetchOrderHistory(true);
+      }, 4000); // Live poll every 4 seconds
+
+      return () => clearInterval(interval);
+    }
   }, [session, status]);
 
   // Fallback function to fetch product images from catalog
@@ -224,13 +244,38 @@ export default function AccountPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white text-gray-900 min-h-screen">
+      {/* CSS Keyframes for Shimmer Animation */}
+      <style jsx global>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+        .animate-shimmer {
+          animation: shimmer 2s infinite linear;
+        }
+      `}</style>
+
       {/* Dashboard Header */}
-      <div className="pb-6 mb-8 border-b border-gray-200 flex justify-between items-center">
+      <div className="pb-6 mb-8 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">My Account</h1>
           <p className="text-gray-500 text-sm mt-1">
             Review your past purchases, current active orders, and live delivery status.
           </p>
+        </div>
+
+        {/* Real-time sync badge */}
+        <div className="flex items-center space-x-2 bg-indigo-50 border border-indigo-100 text-indigo-700 px-3.5 py-2 rounded-xl text-xs font-bold shrink-0">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span>
+          </span>
+          <span>Live Tracking Active</span>
+          {isLiveUpdating && <RefreshCw className="w-3 h-3 animate-spin text-indigo-600 ml-1" />}
         </div>
       </div>
 
@@ -287,7 +332,7 @@ export default function AccountPage() {
               return (
                 <div
                   key={order._id}
-                  className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition"
+                  className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition duration-300"
                 >
                   {/* Order Header / Toggle Trigger */}
                   <div
@@ -298,7 +343,7 @@ export default function AccountPage() {
                       <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
                         Order ID
                       </p>
-                      <p className="text-sm font-black text-gray-900">#{order._id}</p>
+                      <p className="text-sm font-black text-gray-900 font-mono">#{order._id}</p>
                     </div>
 
                     <div className="flex items-center space-x-4 sm:space-x-6">
@@ -314,7 +359,7 @@ export default function AccountPage() {
                           <Tag className="w-3.5 h-3.5" /> Total
                         </p>
                         <p className="text-sm font-black text-indigo-600">
-                          ₹{Number(order.totalAmount || 0).toLocaleString('en-IN')}
+                          ₹{Number(order.totalAmount || order.price || 0).toLocaleString('en-IN')}
                         </p>
                       </div>
 
@@ -331,64 +376,65 @@ export default function AccountPage() {
                     </div>
                   </div>
 
-                  {/* Expanded Content: Timeline & Product Items */}
-                  <div className="p-4 sm:p-6 space-y-6">
-                    {/* Live Tracker (Rendered when expanded) */}
-                    {isExpanded && (
-                      <div className="pb-4 border-b border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* Expanded Content: Realtime Progress Tracker & Product Items */}
+                  {isExpanded && (
+                    <div className="p-4 sm:p-6 space-y-6 animate-in fade-in duration-300">
+                      <div className="pb-4 border-b border-gray-100">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-black uppercase text-gray-500 tracking-wider">
+                          <span className="text-xs font-black uppercase text-gray-500 tracking-wider flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                             Live Order Tracking
                           </span>
+                          <span className="text-[10px] text-indigo-600 font-bold">Updated real-time</span>
                         </div>
                         <OrderTimeline status={order.status} />
                       </div>
-                    )}
 
-                    {/* Order Items List */}
-                    <div className="divide-y divide-gray-100">
-                      {order.items?.map((item, idx) => {
-                        const itemImg = getItemImage(item);
+                      {/* Order Items List */}
+                      <div className="divide-y divide-gray-100">
+                        {(order.items || order.products || []).map((item, idx) => {
+                          const itemImg = getItemImage(item);
 
-                        return (
-                          <div
-                            key={idx}
-                            className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
-                          >
-                            <div className="flex items-center space-x-4">
-                              <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200 relative">
-                                {itemImg ? (
-                                  <img
-                                    src={itemImg}
-                                    alt={item.title || 'Product Image'}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[10px] font-semibold text-gray-400 bg-gray-50">
-                                    No Image
-                                  </div>
-                                )}
+                          return (
+                            <div
+                              key={idx}
+                              className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
+                            >
+                              <div className="flex items-center space-x-4">
+                                <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200 relative">
+                                  {itemImg ? (
+                                    <img
+                                      src={itemImg}
+                                      alt={item.title || 'Product Image'}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[10px] font-semibold text-gray-400 bg-gray-50">
+                                      No Image
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-gray-900 text-sm line-clamp-1">
+                                    {item.title}
+                                  </h4>
+                                  <p className="text-xs text-gray-500 mt-0.5">
+                                    Qty: {item.quantity || 1} | Size: {item.size || 'M'} | Color: {item.color || 'Default'}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <h4 className="font-bold text-gray-900 text-sm line-clamp-1">
-                                  {item.title}
-                                </h4>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  Qty: {item.quantity} | Size: {item.size || 'M'} | Color: {item.color || 'Default'}
+
+                              <div className="text-right shrink-0">
+                                <p className="font-extrabold text-sm text-gray-900">
+                                  ₹{(Number(item.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}
                                 </p>
                               </div>
                             </div>
-
-                            <div className="text-right shrink-0">
-                              <p className="font-extrabold text-sm text-gray-900">
-                                ₹{(Number(item.price) * item.quantity).toLocaleString('en-IN')}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}

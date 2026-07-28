@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { Search, Filter, ShoppingBag, Check, SlidersHorizontal, Heart, RotateCcw, X, Loader2 } from 'lucide-react';
+import { Search, Filter, ShoppingBag, Check, SlidersHorizontal, Heart, RotateCcw, X } from 'lucide-react';
 
 function CatalogContent() {
   const { addToCart } = useCart();
@@ -15,7 +15,6 @@ function CatalogContent() {
 
   const [products, setProducts] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState(null);
   const [addedId, setAddedId] = useState(null);
   
@@ -35,9 +34,9 @@ function CatalogContent() {
     setCategory(urlCategory);
   }, [searchParams]);
 
-  // Fetch initial catalog data once on load
+  // Fetch complete product list once on initial load
   useEffect(() => {
-    async function fetchInitialProducts() {
+    async function fetchAllProducts() {
       try {
         setInitialLoading(true);
         const res = await fetch('/api/products');
@@ -64,43 +63,11 @@ function CatalogContent() {
       }
     }
 
-    fetchInitialProducts();
+    fetchAllProducts();
   }, []);
-
-  // Background search sync (silent fetch without full-page spinner)
-  const fetchProductsSilent = useCallback(async (querySearch, queryCategory) => {
-    try {
-      setIsSearching(true);
-      const query = new URLSearchParams();
-      if (querySearch) query.set('search', querySearch);
-      if (queryCategory) query.set('category', queryCategory);
-
-      const url = `/api/products?${query.toString()}`;
-      const res = await fetch(url);
-      if (!res.ok) return;
-
-      const data = await res.json();
-      if (data.success && data.products) {
-        setProducts(data.products);
-      }
-    } catch (err) {
-      console.error('Silent Search Fetch Error:', err);
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
-
-  // Debounced search trigger for background network sync
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchProductsSilent(search, category);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [search, category, fetchProductsSilent]);
 
   // Stemmer helper for plurals (e.g. "shirts" -> "shirt", "hoodies" -> "hoodie")
-  const stemWord = (word = '') => {
+  const normalizeToken = (word = '') => {
     let w = word.toLowerCase().trim();
     if (w.endsWith('ies') && w.length > 4) return w.slice(0, -3) + 'y';
     if (w.endsWith('es') && w.length > 4) return w.slice(0, -2);
@@ -108,23 +75,24 @@ function CatalogContent() {
     return w;
   };
 
-  // Smart multi-keyword real-time filter
+  // Instant real-time multi-keyword tokenized search
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       if (search.trim()) {
-        const rawQueryTokens = search.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        const queryTokens = search.toLowerCase().trim().split(/\s+/).filter(Boolean);
         
-        // Build product searchable text
         const colorText = Array.isArray(product.colors) ? product.colors.join(' ') : '';
         const fullProductText = `${product.title || ''} ${product.category || ''} ${product.description || ''} ${colorText}`.toLowerCase();
 
-        // Check if every search word/stem exists in the product details
-        const allKeywordsMatch = rawQueryTokens.every((token) => {
-          const stemmedToken = stemWord(token);
-          return fullProductText.includes(token) || fullProductText.includes(stemmedToken);
+        // Check if all user search words match somewhere in the product title/category/description
+        const allMatch = queryTokens.every((token) => {
+          const normalized = normalizeToken(token);
+          
+          // Match direct substring OR normalized plural/singular form
+          return fullProductText.includes(token) || fullProductText.includes(normalized);
         });
 
-        if (!allKeywordsMatch) return false;
+        if (!allMatch) return false;
       }
 
       if (category && product.category?.toLowerCase() !== category.toLowerCase()) {
@@ -187,7 +155,7 @@ function CatalogContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white text-gray-900 min-h-screen">
-      {/* Header & Real-time Search */}
+      {/* Header & Instant Keyword Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-gray-200">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Shop Collection</h1>
@@ -204,7 +172,7 @@ function CatalogContent() {
             <span>Filters</span>
           </button>
 
-          {/* Real-time Search Input with Inline Spinner */}
+          {/* Real-time Instant Search Input */}
           <div className="relative flex-1 md:w-80">
             <input
               type="text"
@@ -215,18 +183,14 @@ function CatalogContent() {
             />
             <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
             
-            <div className="absolute right-3 top-3 flex items-center gap-1">
-              {isSearching ? (
-                <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
-              ) : search ? (
-                <button
-                  onClick={() => setSearch('')}
-                  className="text-gray-400 hover:text-gray-700 transition"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              ) : null}
-            </div>
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-700 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>

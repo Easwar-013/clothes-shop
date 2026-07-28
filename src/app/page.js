@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ShoppingBag, Truck, RefreshCw, ShieldCheck, Sparkles, Check } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -10,9 +10,6 @@ export default function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addedId, setAddedId] = useState(null);
-  const [isPaused, setIsPaused] = useState(false);
-
-  const scrollRef = useRef(null);
 
   const categories = [
     { name: 'Shirts', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?q=80&w=800&auto=format&fit=crop', count: '12+ Items' },
@@ -51,25 +48,8 @@ export default function HomePage() {
     fetchProducts();
   }, []);
 
-  const displayProducts = products.length > 0 ? [...products, ...products, ...products] : [];
-
-  // Continuous smooth & slow auto-scroll loop
-  useEffect(() => {
-    if (loading || displayProducts.length === 0 || isPaused) return;
-
-    const container = scrollRef.current;
-    if (!container) return;
-
-    const interval = setInterval(() => {
-      if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
-        container.scrollLeft = 0;
-      } else {
-        container.scrollLeft += 1; // Decreased step size for slower, gentler scroll
-      }
-    }, 30); // 30ms interval for smooth relaxed movement
-
-    return () => clearInterval(interval);
-  }, [loading, displayProducts, isPaused]);
+  // Double the products array to create a seamless infinite loop
+  const displayProducts = products.length > 0 ? [...products, ...products] : [];
 
   const handleQuickAdd = (product, finalPrice, e) => {
     e.preventDefault();
@@ -91,6 +71,27 @@ export default function HomePage() {
 
   return (
     <div className="space-y-16 pb-16 bg-white text-gray-900 overflow-x-hidden">
+      {/* 60FPS Hardware-Accelerated Smooth Marquee Styles */}
+      <style jsx global>{`
+        @keyframes smoothMarquee {
+          0% {
+            transform: translate3d(0, 0, 0);
+          }
+          100% {
+            transform: translate3d(-50%, 0, 0);
+          }
+        }
+        .animate-smooth-marquee {
+          display: flex;
+          width: max-content;
+          animation: smoothMarquee 35s linear infinite;
+          will-change: transform;
+        }
+        .animate-smooth-marquee:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+
       {/* 1. Hero Section */}
       <section className="relative bg-gray-900 text-white overflow-hidden py-24 lg:py-32">
         <div className="absolute inset-0 z-0 opacity-40">
@@ -203,7 +204,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. Trending Now Section */}
+      {/* 4. GPU-Accelerated Trending Now Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex justify-between items-end">
           <div>
@@ -226,95 +227,89 @@ export default function HomePage() {
             No items available right now.
           </div>
         ) : (
-          <div
-            ref={scrollRef}
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-            onTouchStart={() => setIsPaused(true)}
-            onTouchEnd={() => setIsPaused(false)}
-            className="flex space-x-6 overflow-x-auto py-2 px-1 border-b border-transparent scrollbar-none"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {displayProducts.map((product, idx) => {
-              const originalPrice = Number(product.price) || 0;
-              const offerPercent = Number(product.offer) || 0;
-              const hasOffer = offerPercent > 0;
+          <div className="w-full overflow-hidden py-2">
+            <div className="animate-smooth-marquee space-x-6">
+              {displayProducts.map((product, idx) => {
+                const originalPrice = Number(product.price) || 0;
+                const offerPercent = Number(product.offer) || 0;
+                const hasOffer = offerPercent > 0;
 
-              const finalPrice = hasOffer
-                ? Number((originalPrice - (originalPrice * offerPercent) / 100).toFixed(2))
-                : originalPrice;
+                const finalPrice = hasOffer
+                  ? Number((originalPrice - (originalPrice * offerPercent) / 100).toFixed(2))
+                  : originalPrice;
 
-              return (
-                <div
-                  key={`${product._id}-${idx}`}
-                  className="w-[280px] shrink-0 group bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-                >
-                  <Link href={`/product/${product._id}`} className="block relative">
-                    <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">
-                      {product.images?.[0] ? (
-                        <img
-                          src={product.images[0]}
-                          alt={product.title}
-                          className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                          No Image
-                        </div>
-                      )}
+                return (
+                  <div
+                    key={`${product._id}-${idx}`}
+                    className="w-[280px] shrink-0 group bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                  >
+                    <Link href={`/product/${product._id}`} className="block relative">
+                      <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">
+                        {product.images?.[0] ? (
+                          <img
+                            src={product.images[0]}
+                            alt={product.title}
+                            className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                            No Image
+                          </div>
+                        )}
 
-                      {product.category && (
-                        <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-xs font-bold text-gray-900 px-2.5 py-1 rounded-md border border-gray-200">
-                          {product.category}
-                        </span>
-                      )}
+                        {product.category && (
+                          <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-xs font-bold text-gray-900 px-2.5 py-1 rounded-md border border-gray-200">
+                            {product.category}
+                          </span>
+                        )}
 
-                      {hasOffer && (
-                        <span className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md">
-                          {offerPercent}% OFF
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-
-                  <div className="p-4 flex flex-col flex-1 justify-between">
-                    <div>
-                      <Link href={`/product/${product._id}`}>
-                        <h3 className="font-bold text-gray-900 text-base line-clamp-1 hover:text-indigo-600 transition">
-                          {product.title}
-                        </h3>
-                      </Link>
-                      <p className="text-gray-500 text-xs mt-1 line-clamp-1">{product.description || 'No description provided.'}</p>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-                      <div className="flex items-baseline space-x-1.5">
-                        <span className="text-lg font-black text-gray-900">
-                          ₹{finalPrice.toLocaleString('en-IN')}
-                        </span>
                         {hasOffer && (
-                          <span className="text-xs font-bold text-gray-400 line-through">
-                            ₹{originalPrice.toLocaleString('en-IN')}
+                          <span className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md">
+                            {offerPercent}% OFF
                           </span>
                         )}
                       </div>
+                    </Link>
 
-                      <button
-                        onClick={(e) => handleQuickAdd(product, finalPrice, e)}
-                        className={`p-2.5 rounded-xl transition flex items-center justify-center ${
-                          addedId === product._id
-                            ? 'bg-green-600 text-white'
-                            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
-                        }`}
-                        aria-label="Quick Add to Cart"
-                      >
-                        {addedId === product._id ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
-                      </button>
+                    <div className="p-4 flex flex-col flex-1 justify-between">
+                      <div>
+                        <Link href={`/product/${product._id}`}>
+                          <h3 className="font-bold text-gray-900 text-base line-clamp-1 hover:text-indigo-600 transition">
+                            {product.title}
+                          </h3>
+                        </Link>
+                        <p className="text-gray-500 text-xs mt-1 line-clamp-1">{product.description || 'No description provided.'}</p>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                        <div className="flex items-baseline space-x-1.5">
+                          <span className="text-lg font-black text-gray-900">
+                            ₹{finalPrice.toLocaleString('en-IN')}
+                          </span>
+                          {hasOffer && (
+                            <span className="text-xs font-bold text-gray-400 line-through">
+                              ₹{originalPrice.toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={(e) => handleQuickAdd(product, finalPrice, e)}
+                          className={`p-2.5 rounded-xl transition flex items-center justify-center ${
+                            addedId === product._id
+                              ? 'bg-green-600 text-white'
+                              : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
+                          }`}
+                          aria-label="Quick Add to Cart"
+                        >
+                          {addedId === product._id ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </section>

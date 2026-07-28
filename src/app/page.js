@@ -14,6 +14,7 @@ export default function HomePage() {
 
   const scrollRef = useRef(null);
   const animFrameId = useRef(null);
+  const accumulatedScroll = useRef(0);
 
   const categories = [
     { name: 'Shirts', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?q=80&w=800&auto=format&fit=crop', count: '12+ Items' },
@@ -52,24 +53,30 @@ export default function HomePage() {
     fetchProducts();
   }, []);
 
-  // Multiply products to ensure an infinite scrollable strip
+  // Multiply products to ensure a seamless infinite scroll strip
   const displayProducts = products.length > 0 ? [...products, ...products, ...products, ...products] : [];
 
-  // Ultra-Smooth 60FPS Auto-Scroll Engine (using requestAnimationFrame)
+  // Mobile-Compatible Auto-Scroll Engine
   useEffect(() => {
     const container = scrollRef.current;
     if (loading || displayProducts.length === 0 || !container) return;
 
-    const scrollSpeed = 0.8; // Smooth speed factor
+    accumulatedScroll.current = container.scrollLeft;
 
     const step = () => {
       if (!isPaused && container) {
-        // Reset seamlessly when reaching end
-        if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 2) {
+        // Reset position smoothly when reaching the end of the loop
+        if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 5) {
+          accumulatedScroll.current = 1;
           container.scrollLeft = 1;
         } else {
-          container.scrollLeft += scrollSpeed;
+          // Integer step increment guarantees movement on mobile WebKit screens
+          accumulatedScroll.current += 1;
+          container.scrollLeft = Math.floor(accumulatedScroll.current);
         }
+      } else if (container) {
+        // Sync accumulated scroll if user manually swipes/scrolls
+        accumulatedScroll.current = container.scrollLeft;
       }
       animFrameId.current = requestAnimationFrame(step);
     };
@@ -103,7 +110,6 @@ export default function HomePage() {
 
   return (
     <div className="space-y-16 pb-16 bg-white text-gray-900 overflow-x-hidden">
-      {/* Hide default browser scrollbars for clean presentation */}
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;
@@ -226,7 +232,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. Smooth & Fully Scrollable Trending Section */}
+      {/* 4. Smooth Mobile & Desktop Trending Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex justify-between items-end">
           <div>

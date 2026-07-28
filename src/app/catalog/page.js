@@ -99,14 +99,32 @@ function CatalogContent() {
     return () => clearTimeout(timer);
   }, [search, category, fetchProductsSilent]);
 
-  // Client-side real-time instant filtering
+  // Stemmer helper for plurals (e.g. "shirts" -> "shirt", "hoodies" -> "hoodie")
+  const stemWord = (word = '') => {
+    let w = word.toLowerCase().trim();
+    if (w.endsWith('ies') && w.length > 4) return w.slice(0, -3) + 'y';
+    if (w.endsWith('es') && w.length > 4) return w.slice(0, -2);
+    if (w.endsWith('s') && w.length > 3) return w.slice(0, -1);
+    return w;
+  };
+
+  // Smart multi-keyword real-time filter
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
-      if (search) {
-        const query = search.toLowerCase().trim();
-        const matchTitle = product.title?.toLowerCase().includes(query);
-        const matchCat = product.category?.toLowerCase().includes(query);
-        if (!matchTitle && !matchCat) return false;
+      if (search.trim()) {
+        const rawQueryTokens = search.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        
+        // Build product searchable text
+        const colorText = Array.isArray(product.colors) ? product.colors.join(' ') : '';
+        const fullProductText = `${product.title || ''} ${product.category || ''} ${product.description || ''} ${colorText}`.toLowerCase();
+
+        // Check if every search word/stem exists in the product details
+        const allKeywordsMatch = rawQueryTokens.every((token) => {
+          const stemmedToken = stemWord(token);
+          return fullProductText.includes(token) || fullProductText.includes(stemmedToken);
+        });
+
+        if (!allKeywordsMatch) return false;
       }
 
       if (category && product.category?.toLowerCase() !== category.toLowerCase()) {

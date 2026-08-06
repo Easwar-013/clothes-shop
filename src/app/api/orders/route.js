@@ -9,7 +9,19 @@ export async function POST(req) {
     await dbConnect();
     const body = await req.json();
 
-    const { items, totalAmount, shippingAddress, paymentMethod, user, userName, userEmail } = body;
+    const {
+      items,
+      totalAmount,
+      shippingAddress,
+      paymentMethod,
+      paymentStatus,
+      discountApplied,
+      couponCode,
+      user,
+      userName,
+      userEmail,
+      userPhone,
+    } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0 || !totalAmount || !shippingAddress) {
       return NextResponse.json(
@@ -29,7 +41,6 @@ export async function POST(req) {
       foundUser = await User.findOne({ email: userEmail || user });
     }
 
-    // Convert string ID into a native MongoDB ObjectId if available
     let resolvedUserId = '650000000000000000000000';
     if (foundUser) {
       resolvedUserId = foundUser._id;
@@ -38,9 +49,8 @@ export async function POST(req) {
     }
 
     const resolvedName = foundUser ? foundUser.name : (userName || 'Customer');
-    const resolvedEmail = foundUser ? foundUser.email : (userEmail || shippingAddress?.phone || '');
+    const resolvedEmail = foundUser ? foundUser.email : (userEmail || '');
 
-    // Sanitize items
     const sanitizedItems = items.map((item) => ({
       product: item.product || item._id || '650000000000000000000000',
       title: item.title || 'Product',
@@ -48,10 +58,11 @@ export async function POST(req) {
       quantity: Number(item.quantity) || 1,
       size: item.size || 'M',
       color: item.color || 'Default',
+      image: item.image || '',
     }));
 
     const normalizedShippingAddress = {
-      phone: shippingAddress?.phone || '',
+      phone: shippingAddress?.phone || userPhone || '',
       street: shippingAddress?.street || '',
       city: shippingAddress?.city || '',
       state: shippingAddress?.state || '',
@@ -59,15 +70,21 @@ export async function POST(req) {
       country: shippingAddress?.country || 'India',
     };
 
+    const isCod = paymentMethod === 'Cash on Delivery';
+
     const newOrder = await Order.create({
       user: resolvedUserId,
       userName: resolvedName,
       userEmail: resolvedEmail,
+      userPhone: userPhone || shippingAddress?.phone || '',
       items: sanitizedItems,
       totalAmount: Number(totalAmount) || 0,
+      discountApplied: Number(discountApplied) || 0,
+      couponCode: couponCode || null,
       shippingAddress: normalizedShippingAddress,
-      paymentMethod: paymentMethod || 'Standard Test Payment',
-      isPaid: true,
+      paymentMethod: paymentMethod || 'Cash on Delivery',
+      paymentStatus: paymentStatus || (isCod ? 'Pending' : 'Paid'),
+      isPaid: !isCod,
       status: 'Pending',
     });
 

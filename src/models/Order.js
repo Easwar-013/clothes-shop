@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 
-// Clear cached model in dev
 if (process.env.NODE_ENV !== 'production') {
   delete mongoose.models.Order;
 }
@@ -13,6 +12,7 @@ const OrderSchema = new mongoose.Schema(
     },
     userName: { type: String, default: 'Customer' },
     userEmail: { type: String, default: '' },
+    userPhone: { type: String, default: '' },
     items: [
       {
         product: { type: mongoose.Schema.Types.Mixed },
@@ -21,6 +21,7 @@ const OrderSchema = new mongoose.Schema(
         quantity: { type: Number, required: true, default: 1 },
         size: { type: String, default: 'M' },
         color: { type: String, default: 'Default' },
+        image: { type: String, default: '' },
       },
     ],
     shippingAddress: {
@@ -32,8 +33,13 @@ const OrderSchema = new mongoose.Schema(
       country: { type: String, default: 'India' },
     },
     totalAmount: { type: Number, required: true },
-    paymentMethod: { type: String, default: 'Standard Test Payment' },
-    isPaid: { type: Boolean, default: true },
+    discountApplied: { type: Number, default: 0 },
+    couponCode: { type: String, default: null },
+    paymentMethod: { type: String, default: 'Razorpay' },
+    paymentStatus: { type: String, enum: ['Paid', 'Pending', 'Failed'], default: 'Pending' },
+    isPaid: { type: Boolean, default: false },
+    razorpayOrderId: { type: String, default: null },
+    razorpayPaymentId: { type: String, default: null },
     status: {
       type: String,
       enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],

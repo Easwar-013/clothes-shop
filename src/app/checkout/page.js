@@ -5,7 +5,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
-import { ShoppingBag, ArrowLeft, CheckCircle2, Package, Tag, X, CreditCard, ShieldCheck, Truck } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, CheckCircle2, Package, Tag, X, ShieldCheck, Truck } from 'lucide-react';
+import ClothesLoader from '@/components/ClothesLoader';
 
 // Utility helper to dynamically load the Razorpay SDK script
 const loadRazorpayScript = () => {
@@ -240,8 +241,7 @@ export default function CheckoutPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center bg-white text-gray-900">
-        <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent mb-4"></div>
-        <p className="text-gray-500 font-medium text-sm">Verifying session...</p>
+        <ClothesLoader text="Verifying session..." />
       </div>
     );
   }

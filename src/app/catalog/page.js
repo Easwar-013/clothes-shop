@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { Search, Filter, ShoppingBag, Check, SlidersHorizontal, Heart, RotateCcw, X } from 'lucide-react';
+import ClothesLoader from '@/components/ClothesLoader';
 
 function CatalogContent() {
   const { addToCart } = useCart();
@@ -66,7 +67,6 @@ function CatalogContent() {
     fetchAllProducts();
   }, []);
 
-  // Stemmer helper for plurals (e.g. "shirts" -> "shirt", "hoodies" -> "hoodie")
   const normalizeToken = (word = '') => {
     let w = word.toLowerCase().trim();
     if (w.endsWith('ies') && w.length > 4) return w.slice(0, -3) + 'y';
@@ -75,20 +75,15 @@ function CatalogContent() {
     return w;
   };
 
-  // Instant real-time multi-keyword tokenized search
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       if (search.trim()) {
         const queryTokens = search.toLowerCase().trim().split(/\s+/).filter(Boolean);
-        
         const colorText = Array.isArray(product.colors) ? product.colors.join(' ') : '';
         const fullProductText = `${product.title || ''} ${product.category || ''} ${product.description || ''} ${colorText}`.toLowerCase();
 
-        // Check if all user search words match somewhere in the product title/category/description
         const allMatch = queryTokens.every((token) => {
           const normalized = normalizeToken(token);
-          
-          // Match direct substring OR normalized plural/singular form
           return fullProductText.includes(token) || fullProductText.includes(normalized);
         });
 
@@ -165,8 +160,8 @@ function CatalogContent() {
         <div className="flex items-center gap-3 w-full md:w-auto">
           {/* Mobile Filter Trigger Button */}
           <button
-            onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-bold transition shrink-0 border border-gray-200"
+            onClick={() => setShowMobileFilters(true)}
+            className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-bold active:scale-95 transition-all duration-200 shrink-0 border border-gray-200 shadow-sm"
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span>Filters</span>
@@ -179,14 +174,14 @@ function CatalogContent() {
               placeholder="Search clothes..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-9 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-sm text-gray-900 focus:bg-white focus:outline-none focus:border-indigo-600 transition"
+              className="w-full pl-10 pr-9 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-sm text-gray-900 focus:bg-white focus:outline-none focus:border-indigo-600 transition-all duration-200"
             />
             <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
             
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-3 text-gray-400 hover:text-gray-700 transition"
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-700 transition-colors duration-150"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -195,10 +190,18 @@ function CatalogContent() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-8">
-        {/* Sidebar Filters */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-8 relative">
+        {/* Mobile Backdrop Overlay */}
+        <div
+          onClick={() => setShowMobileFilters(false)}
+          className={`fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden transition-opacity duration-300 ease-out ${
+            showMobileFilters ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+        />
+
+        {/* Animated Sidebar Filters */}
         <aside
-          className={`fixed inset-0 z-50 bg-white p-6 overflow-y-auto transition-transform duration-300 lg:static lg:z-auto lg:translate-x-0 lg:bg-gray-50 lg:p-6 lg:rounded-2xl lg:border lg:border-gray-200 lg:h-fit lg:sticky lg:top-20 ${
+          className={`fixed inset-y-0 left-0 z-50 w-80 bg-white p-6 overflow-y-auto transition-transform duration-300 ease-out shadow-2xl lg:shadow-none lg:static lg:z-auto lg:w-full lg:translate-x-0 lg:bg-gray-50 lg:p-6 lg:rounded-2xl lg:border lg:border-gray-200 lg:h-fit lg:sticky lg:top-20 ${
             showMobileFilters ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
         >
@@ -210,14 +213,14 @@ function CatalogContent() {
             <div className="flex items-center gap-3">
               <button
                 onClick={clearFilters}
-                className="text-xs text-indigo-600 font-bold hover:underline flex items-center space-x-1"
+                className="text-xs text-indigo-600 font-bold hover:underline flex items-center space-x-1 active:scale-95 transition-transform duration-150"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset</span>
               </button>
               <button
                 onClick={() => setShowMobileFilters(false)}
-                className="lg:hidden p-1 text-gray-500 hover:text-gray-900"
+                className="lg:hidden p-1 text-gray-500 hover:text-gray-900 transition-colors duration-150"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -231,10 +234,10 @@ function CatalogContent() {
               <div className="space-y-1.5">
                 <button
                   onClick={() => handleCategorySelect('')}
-                  className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition ${
+                  className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition-all duration-200 active:scale-98 ${
                     category === ''
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                      : 'text-gray-700 hover:bg-gray-200/60'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 translate-x-1'
+                      : 'text-gray-700 hover:bg-gray-200/60 hover:translate-x-0.5'
                   }`}
                 >
                   All Categories
@@ -245,10 +248,10 @@ function CatalogContent() {
                     <button
                       key={cat}
                       onClick={() => handleCategorySelect(cat)}
-                      className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition ${
+                      className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition-all duration-200 active:scale-98 ${
                         isSelected
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                          : 'text-gray-700 hover:bg-gray-200/60'
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 translate-x-1'
+                          : 'text-gray-700 hover:bg-gray-200/60 hover:translate-x-0.5'
                       }`}
                     >
                       {cat}
@@ -268,10 +271,10 @@ function CatalogContent() {
                     <button
                       key={sz}
                       onClick={() => setSelectedSize(isSelected ? '' : sz)}
-                      className={`py-2 text-xs font-bold rounded-xl border transition ${
+                      className={`py-2 text-xs font-bold rounded-xl border transition-all duration-200 active:scale-95 ${
                         isSelected
-                          ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                          ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm scale-105'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
                       {sz}
@@ -296,13 +299,13 @@ function CatalogContent() {
                 step="500"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="w-full accent-indigo-600 cursor-pointer"
+                className="w-full accent-indigo-600 cursor-pointer transition-all duration-150"
               />
             </div>
 
             <button
               onClick={() => setShowMobileFilters(false)}
-              className="w-full lg:hidden py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-md mt-4"
+              className="w-full lg:hidden py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white rounded-xl font-bold text-xs shadow-md mt-4 transition-all duration-200"
             >
               Apply Filters
             </button>
@@ -318,20 +321,17 @@ function CatalogContent() {
           )}
 
           {initialLoading ? (
-            <div className="py-20 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-              <p className="mt-4 text-gray-600 font-medium text-xs">Loading collection...</p>
-            </div>
+            <ClothesLoader text="Loading collection..." />
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-300 space-y-3">
-              <Filter className="w-10 h-10 text-gray-400 mx-auto" />
+              <Filter className="w-10 h-10 text-gray-400 mx-auto animate-pulse" />
               <h3 className="text-lg font-bold text-gray-900">No products match your search</h3>
               <p className="text-gray-500 text-xs max-w-xs mx-auto">
                 Try searching for another keyword or clearing your filters.
               </p>
               <button
                 onClick={clearFilters}
-                className="mt-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 transition shadow-md"
+                className="mt-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 active:scale-95 transition-all duration-200 shadow-md"
               >
                 Reset Search & Filters
               </button>
@@ -352,7 +352,7 @@ function CatalogContent() {
                 return (
                   <div
                     key={product._id}
-                    className="group bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between relative"
+                    className="group bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 ease-out flex flex-col justify-between relative hover:-translate-y-1"
                   >
                     <Link href={`/product/${product._id}`} className="block relative">
                       <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">
@@ -360,7 +360,7 @@ function CatalogContent() {
                           <img
                             src={product.images[0]}
                             alt={product.title}
-                            className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
+                            className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
@@ -369,7 +369,7 @@ function CatalogContent() {
                         )}
 
                         {product.category && (
-                          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/90 backdrop-blur-md text-[9px] sm:text-[10px] font-bold text-gray-900 px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-md border border-gray-200 uppercase">
+                          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/90 backdrop-blur-md text-[9px] sm:text-[10px] font-bold text-gray-900 px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-md border border-gray-200 uppercase shadow-sm">
                             {product.category}
                           </span>
                         )}
@@ -384,11 +384,11 @@ function CatalogContent() {
 
                     <button
                       onClick={(e) => toggleWishlist(product, e)}
-                      className="absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 sm:p-2 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-gray-100 hover:scale-110 transition z-10"
+                      className="absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 sm:p-2 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-gray-100 hover:scale-110 active:scale-90 transition-all duration-200 z-10"
                       aria-label="Save to Wishlist"
                     >
                       <Heart
-                        className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition ${
+                        className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors duration-200 ${
                           isSaved ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:text-red-500'
                         }`}
                       />
@@ -397,7 +397,7 @@ function CatalogContent() {
                     <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between">
                       <div>
                         <Link href={`/product/${product._id}`}>
-                          <h2 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-1 hover:text-indigo-600 transition">
+                          <h2 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-1 hover:text-indigo-600 transition-colors duration-150">
                             {product.title}
                           </h2>
                         </Link>
@@ -420,9 +420,9 @@ function CatalogContent() {
 
                         <button
                           onClick={(e) => handleQuickAdd(product, finalPrice, e)}
-                          className={`p-2 sm:p-2.5 rounded-xl transition flex items-center justify-center ${
+                          className={`p-2 sm:p-2.5 rounded-xl active:scale-90 transition-all duration-200 flex items-center justify-center ${
                             addedId === product._id
-                              ? 'bg-green-600 text-white'
+                              ? 'bg-green-600 text-white scale-105'
                               : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
                           }`}
                           aria-label="Quick Add to Cart"
@@ -448,7 +448,7 @@ function CatalogContent() {
 
 export default function CatalogPage() {
   return (
-    <Suspense fallback={<div className="py-20 text-center text-xs font-semibold">Loading collection...</div>}>
+    <Suspense fallback={<ClothesLoader text="Loading collection..." />}>
       <CatalogContent />
     </Suspense>
   );

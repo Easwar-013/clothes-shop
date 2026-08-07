@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, Package, X, Upload, Image as ImageIcon } from 'lucide-react';
+import ClothesLoader from '@/components/ClothesLoader';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState([]);
@@ -232,10 +233,7 @@ export default function AdminProductsPage() {
       {/* Products Table */}
       <div className="mt-6 bg-white border border-gray-200/80 rounded-2xl overflow-hidden shadow-sm">
         {loading ? (
-          <div className="py-20 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-            <p className="mt-3 text-gray-500 text-xs font-semibold">Loading inventory...</p>
-          </div>
+          <ClothesLoader text="Loading inventory..." />
         ) : filteredProducts.length === 0 ? (
           <div className="py-16 text-center">
             <Package className="w-12 h-12 text-gray-300 mx-auto mb-2" />

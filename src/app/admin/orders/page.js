@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Package, Clock, CheckCircle, Truck, AlertCircle, RefreshCw, Eye, X } from 'lucide-react';
+import ClothesLoader from '@/components/ClothesLoader';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -104,10 +105,7 @@ export default function AdminOrdersPage() {
 
       <div className="mt-8 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
         {loading ? (
-          <div className="py-20 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-            <p className="mt-3 text-gray-500 text-sm font-medium">Loading orders...</p>
-          </div>
+          <ClothesLoader text="Loading orders..." />
         ) : orders.length === 0 ? (
           <div className="py-16 text-center">
             <Package className="w-12 h-12 text-gray-300 mx-auto mb-2" />
@@ -128,13 +126,11 @@ export default function AdminOrdersPage() {
               </thead>
               <tbody className="divide-y divide-gray-100 text-sm">
                 {orders.map((order) => {
-                  // Resolve Name: Populated User > Direct Order Field > Fallback
                   const customerName = 
                     (typeof order.user === 'object' && order.user?.name) ||
                     order.userName ||
                     'Customer';
 
-                  // Resolve Email / Contact Info
                   const customerContact = 
                     (typeof order.user === 'object' && order.user?.email) ||
                     order.userEmail ||

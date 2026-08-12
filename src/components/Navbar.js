@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { ShoppingBag, Heart, LogOut, Package, Store, ExternalLink, Tag } from 'lucide-react';
+import { ShoppingBag, Heart, LogOut, Package, Store, ExternalLink, Tag, MessageSquare } from 'lucide-react';
 import { useState, Suspense } from 'react';
 
 function NavbarContent() {
@@ -100,6 +100,21 @@ function NavbarContent() {
                 <span
                   className={`absolute bottom-0 left-0 h-0.5 bg-indigo-600 rounded-t-full transition-all duration-300 ease-out ${
                     isActive('/admin/coupons') ? 'w-full opacity-100 scale-x-100' : 'w-full opacity-0 scale-x-0'
+                  }`}
+                />
+              </Link>
+
+              <Link
+                href="/admin/messages"
+                className={`relative flex items-center space-x-1.5 h-full transition-colors duration-200 ease-out ${
+                  isActive('/admin/messages') ? 'text-indigo-600 font-bold' : 'hover:text-indigo-600'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4 transition-transform duration-200 hover:scale-110" />
+                <span>Messages</span>
+                <span
+                  className={`absolute bottom-0 left-0 h-0.5 bg-indigo-600 rounded-t-full transition-all duration-300 ease-out ${
+                    isActive('/admin/messages') ? 'w-full opacity-100 scale-x-100' : 'w-full opacity-0 scale-x-0'
                   }`}
                 />
               </Link>

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ShoppingBag, Truck, RefreshCw, ShieldCheck, Sparkles, Check } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import ClothesLoader from '@/components/ClothesLoader';
 
 export default function HomePage() {
   const { addToCart } = useCart();
@@ -70,12 +71,10 @@ export default function HomePage() {
           accumulatedScroll.current = 1;
           container.scrollLeft = 1;
         } else {
-          // Integer step increment guarantees movement on mobile WebKit screens
           accumulatedScroll.current += 1;
           container.scrollLeft = Math.floor(accumulatedScroll.current);
         }
       } else if (container) {
-        // Sync accumulated scroll if user manually swipes/scrolls
         accumulatedScroll.current = container.scrollLeft;
       }
       animFrameId.current = requestAnimationFrame(step);
@@ -247,9 +246,7 @@ export default function HomePage() {
         </div>
 
         {loading ? (
-          <div className="py-12 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-          </div>
+          <ClothesLoader text="Loading trending items..." />
         ) : products.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed text-gray-500 text-sm">
             No items available right now.

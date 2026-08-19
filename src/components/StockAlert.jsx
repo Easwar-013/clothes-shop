@@ -1,104 +1,122 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Bell, CheckCircle2, XCircle } from "lucide-react";
+import { Bell, Check, X, Send } from "lucide-react";
+import { useSession } from "next-auth/react";
 
-export default function StockAlert({
-  stock = 0,
-  productId = "",
-  productName = "",
-}) {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [showNotifyForm, setShowNotifyForm] = useState(false);
+export default function StockAlert({ stock, productId, productName }) {
+  const { data: session } = useSession();
+  const [isOpen, setIsOpen] = useState(false);
+  const [email, setEmail] = useState(session?.user?.email || "");
+  const [status, setStatus] = useState("idle"); // 'idle' | 'loading' | 'success' | 'error'
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const isOutOfStock = stock === 0;
-  const isLowStock = stock > 0 && stock <= 5;
+  if (stock > 0) return null;
 
-  const handleNotifySubmit = async (e) => {
+  const handleSubscribe = async (e) => {
     e.preventDefault();
     if (!email) return;
 
-    setLoading(true);
+    setStatus("loading");
+    setErrorMsg("");
+
     try {
       const res = await fetch("/api/stock-alert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, productId, productName }),
+        body: JSON.stringify({
+          productId,
+          productName,
+          email,
+        }),
       });
 
       const data = await res.json();
-      if (data.success) {
-        setIsSubscribed(true);
+      if (res.ok && data.success) {
+        setStatus("success");
       } else {
-        alert(data.error || "Failed to register stock alert.");
+        setStatus("error");
+        setErrorMsg(data.error || "Failed to register alert request.");
       }
     } catch (err) {
-      alert("Error sending request. Please try again.");
-    } finally {
-      setLoading(false);
+      setStatus("error");
+      setErrorMsg("An error occurred. Please try again.");
     }
   };
 
   return (
-    <div className="space-y-3">
-      {/* Badge Display */}
-      {isOutOfStock ? (
-        <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-50 text-red-700 border border-red-200">
-          <XCircle className="w-4 h-4 text-red-600 animate-pulse" />
-          <span>Out of Stock</span>
-        </div>
-      ) : isLowStock ? (
-        <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-          <AlertTriangle className="w-4 h-4 text-amber-600" />
-          <span>Hurry! Only {stock} left in stock</span>
-        </div>
+    <div className="w-full space-y-3">
+      {/* Prominent, highly identifiable Notify Button */}
+      {!isOpen ? (
+        <button
+          type="button"
+          onClick={() => {
+            if (session?.user?.email) setEmail(session.user.email);
+            setIsOpen(true);
+          }}
+          className="inline-flex items-center space-x-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-xs transition-all duration-200 border border-indigo-200 shadow-sm active:scale-95 group"
+        >
+          <Bell className="w-4 h-4 text-indigo-600 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+          <span>Notify Me When Back in Stock</span>
+        </button>
       ) : (
-        <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          <span>In Stock ({stock} available)</span>
-        </div>
-      )}
-
-      {/* Notify Form */}
-      {isOutOfStock && (
-        <div className="mt-2">
-          {!showNotifyForm ? (
+        /* Expandable Interactive Input Card */
+        <div className="p-4 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl space-y-3 animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-indigo-900 font-bold text-xs">
+              <Bell className="w-4 h-4 text-indigo-600" />
+              <span>Get Stock Notifications</span>
+            </div>
             <button
-              onClick={() => setShowNotifyForm(true)}
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition flex items-center space-x-1.5"
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                setStatus("idle");
+              }}
+              className="text-gray-400 hover:text-gray-600 p-1 transition"
             >
-              <Bell className="w-3.5 h-3.5" />
-              <span>Notify me when back in stock</span>
+              <X className="w-4 h-4" />
             </button>
-          ) : isSubscribed ? (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-bold flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          </div>
+
+          {status === "success" ? (
+            <div className="flex items-center space-x-2 text-emerald-700 bg-emerald-100/70 p-3 rounded-xl text-xs font-bold border border-emerald-200">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
-                Confirmation email sent! We'll notify you when restocked.
+                We'll email you as soon as this item is back in stock!
               </span>
             </div>
           ) : (
-            <form
-              onSubmit={handleNotifySubmit}
-              className="flex gap-2 max-w-sm mt-1"
-            >
-              <input
-                type="email"
-                required
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-indigo-600"
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shrink-0 disabled:opacity-50"
-              >
-                {loading ? "Sending..." : "Notify Me"}
-              </button>
+            <form onSubmit={handleSubscribe} className="space-y-2">
+              <p className="text-gray-600 text-[11px]">
+                Leave your email and we’ll notify you instantly when inventory
+                is replenished.
+              </p>
+              <div className="flex space-x-2">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs font-medium text-gray-900 focus:outline-none focus:border-indigo-600 transition"
+                />
+                <button
+                  type="submit"
+                  disabled={status === "loading"}
+                  className="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shadow-sm disabled:opacity-50 shrink-0"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>
+                    {status === "loading" ? "Saving..." : "Notify Me"}
+                  </span>
+                </button>
+              </div>
+              {status === "error" && (
+                <p className="text-red-600 text-[10px] font-semibold">
+                  {errorMsg}
+                </p>
+              )}
             </form>
           )}
         </div>

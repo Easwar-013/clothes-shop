@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useSession } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
 import StockAlert from '@/components/StockAlert';
+import ClothesLoader from '@/components/ClothesLoader';
 import { 
   ShoppingBag, 
   Check, 
@@ -292,8 +293,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-32 text-center text-gray-900">
-        <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent"></div>
-        <p className="mt-4 text-gray-500 font-medium text-sm">Loading product details...</p>
+        <ClothesLoader text="Loading product details..." />
       </div>
     );
   }

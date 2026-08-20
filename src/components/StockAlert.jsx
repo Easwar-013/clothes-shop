@@ -11,7 +11,7 @@ export default function StockAlert({ stock, productId, productName }) {
   const [status, setStatus] = useState("idle"); // 'idle' | 'loading' | 'success' | 'error'
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Pre-fill email only on initial load if user is logged in and field is empty
+  // Pre-fill email only once if empty and user is logged in
   useEffect(() => {
     if (session?.user?.email && !email) {
       setEmail(session.user.email);

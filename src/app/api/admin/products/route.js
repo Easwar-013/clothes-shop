@@ -2,9 +2,16 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Product from '@/models/Product';
 import StockAlert from '@/models/StockAlert';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Configure Nodemailer transporter with Gmail
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASS,
+  },
+});
 
 // GET /api/admin/products - Fetch all products
 export async function GET() {
@@ -105,36 +112,38 @@ export async function PUT(req) {
 
       const baseUrl = process.env.NEXTAUTH_URL || 'https://clothes-shop-beta-black.vercel.app';
 
-      for (const alertRecord of pendingAlerts) {
-        try {
-          await resend.emails.send({
-            from: 'Attire Store <onboarding@resend.dev>',
-            to: alertRecord.email,
-            subject: `🎉 Back in Stock: ${updatedProduct.title}!`,
-            html: `
-              <div style="font-family: Arial, sans-serif; padding: 24px; color: #111827; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px;">
-                <h2 style="font-size: 20px; font-weight: 800; color: #4f46e5; margin-bottom: 8px;">Good news!</h2>
-                <h3 style="font-size: 16px; font-weight: 700; margin-top: 0;">${updatedProduct.title} is back in stock!</h3>
-                <p style="font-size: 14px; color: #4b5563; line-height: 1.5;">
-                  The item you were waiting for has just been restocked (${updatedProduct.stock} items available). Grab yours before it runs out again!
-                </p>
-                <div style="margin-top: 24px;">
-                  <a href="${baseUrl}/product/${updatedProduct._id}" 
-                     style="background-color: #4f46e5; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block;">
-                     Shop Product Now
-                  </a>
+      if (pendingAlerts.length > 0 && process.env.GMAIL_USER && process.env.GMAIL_APP_PASS) {
+        for (const alertRecord of pendingAlerts) {
+          try {
+            await transporter.sendMail({
+              from: `"Attire Store" <${process.env.GMAIL_USER}>`,
+              to: alertRecord.email,
+              subject: `🎉 Back in Stock: ${updatedProduct.title}!`,
+              html: `
+                <div style="font-family: Arial, sans-serif; padding: 24px; color: #111827; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px;">
+                  <h2 style="font-size: 20px; font-weight: 800; color: #4f46e5; margin-bottom: 8px;">Good news!</h2>
+                  <h3 style="font-size: 16px; font-weight: 700; margin-top: 0;">${updatedProduct.title} is back in stock!</h3>
+                  <p style="font-size: 14px; color: #4b5563; line-height: 1.5;">
+                    The item you were waiting for has just been restocked (${updatedProduct.stock} items available). Grab yours before it runs out again!
+                  </p>
+                  <div style="margin-top: 24px;">
+                    <a href="${baseUrl}/product/${updatedProduct._id}" 
+                       style="background-color: #4f46e5; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block;">
+                       Shop Product Now
+                    </a>
+                  </div>
+                  <hr style="border: none; border-top: 1px solid #f3f4f6; margin-top: 32px; margin-bottom: 16px;" />
+                  <p style="font-size: 12px; color: #9ca3af; margin: 0;">You received this because you requested a restock alert on Attire Store.</p>
                 </div>
-                <hr style="border: none; border-top: 1px solid #f3f4f6; margin-top: 32px; margin-bottom: 16px;" />
-                <p style="font-size: 12px; color: #9ca3af; margin: 0;">You received this because you requested a restock alert on Attire Store.</p>
-              </div>
-            `,
-          });
+              `,
+            });
 
-          // Mark as notified so they don't receive duplicate emails later
-          alertRecord.notified = true;
-          await alertRecord.save();
-        } catch (emailErr) {
-          console.error(`Failed to send restock alert to ${alertRecord.email}:`, emailErr);
+            // Mark as notified so they don't receive duplicate emails later
+            alertRecord.notified = true;
+            await alertRecord.save();
+          } catch (emailErr) {
+            console.error(`Failed to send restock alert to ${alertRecord.email}:`, emailErr);
+          }
         }
       }
     }

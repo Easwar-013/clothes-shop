@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import StockAlert from '@/models/StockAlert';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Configure standard Gmail SMTP transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASS,
+  },
+});
 
 export async function POST(req) {
   try {
@@ -30,21 +37,21 @@ export async function POST(req) {
       { upsert: true, new: true }
     );
 
-    // Send confirmation email (isolated in try/catch so Resend testing-domain restrictions don't crash the request)
-    try {
-      if (process.env.RESEND_API_KEY) {
-        const { data, error: resendError } = await resend.emails.send({
-          from: process.env.EMAIL_FROM || 'Attire Store <onboarding@resend.dev>',
+    // Send confirmation email to ANY email address
+    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASS) {
+      try {
+        await transporter.sendMail({
+          from: `"ATTIRE." <${process.env.GMAIL_USER}>`,
           to: cleanEmail,
-          subject: `Restock Request Received: ${productName || 'Your Item'}`,
+          subject: `Restock Alert Registered: ${productName || 'Your Item'}`,
           html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: #1f2937; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; rounded: 16px;">
+            <div style="font-family: sans-serif; padding: 24px; color: #1f2937; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px;">
               <h2 style="color: #4f46e5; margin-bottom: 8px;">We've Got You Covered!</h2>
-              <p style="font-size: 14px; line-height: 1.5; color: #4b5563;">
+              <p style="font-size: 14px; line-height: 1.6; color: #4b5563;">
                 You requested a restock notification for <strong>${productName || 'Your Item'}</strong>.
               </p>
-              <p style="font-size: 14px; line-height: 1.5; color: #4b5563;">
-                We'll email you the moment this item is replenished in our store.
+              <p style="font-size: 14px; line-height: 1.6; color: #4b5563;">
+                We'll email you the moment this item is replenished in our store catalog.
               </p>
               <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 20px 0;" />
               <p style="font-size: 12px; color: #9ca3af;">
@@ -53,13 +60,9 @@ export async function POST(req) {
             </div>
           `,
         });
-
-        if (resendError) {
-          console.warn('Resend Delivery Warning:', resendError);
-        }
+      } catch (mailErr) {
+        console.error('Nodemailer Send Error:', mailErr);
       }
-    } catch (emailErr) {
-      console.warn('Email dispatch skipped or blocked by sandbox restrictions:', emailErr.message);
     }
 
     return NextResponse.json({ success: true, message: 'Subscribed to stock alert!' });

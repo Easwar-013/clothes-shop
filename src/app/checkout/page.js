@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
-import { ShoppingBag, ArrowLeft, CheckCircle2, Package, Tag, X, ShieldCheck, Truck } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, CheckCircle2, Package, Tag, X, ShieldCheck, Truck, Loader2, Globe } from 'lucide-react';
 import ClothesLoader from '@/components/ClothesLoader';
 
 // Utility helper to dynamically load the Razorpay SDK script
@@ -23,6 +23,21 @@ const loadRazorpayScript = () => {
   });
 };
 
+const COMMON_COUNTRIES = [
+  { code: 'IN', name: 'India' },
+  { code: 'US', name: 'United States' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'AE', name: 'United Arab Emirates' },
+  { code: 'SG', name: 'Singapore' },
+];
+
 export default function CheckoutPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -30,6 +45,7 @@ export default function CheckoutPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [fetchingPincode, setFetchingPincode] = useState(false);
 
   // Payment Method Selection State: 'ONLINE' or 'COD'
   const [paymentMethod, setPaymentMethod] = useState('ONLINE');
@@ -42,6 +58,7 @@ export default function CheckoutPage() {
     state: '',
     zipCode: '',
     country: 'India',
+    countryCode: 'IN',
   });
 
   // Coupon State
@@ -62,6 +79,80 @@ export default function CheckoutPage() {
       router.push('/login?callbackUrl=/checkout');
     }
   }, [status, router]);
+
+  // Global Multi-Country Postal/ZIP Code Auto Lookup
+  const fetchGlobalPostalData = async (zip, countryCode) => {
+    if (!zip || zip.length < 3) return;
+
+    setFetchingPincode(true);
+    try {
+      // 1. If India (IN) -> Use India Post API
+      if (countryCode === 'IN') {
+        const cleanZip = zip.replace(/\D/g, '').slice(0, 6);
+        if (cleanZip.length === 6) {
+          const res = await fetch(`https://api.postalpincode.in/pincode/${cleanZip}`);
+          const data = await res.json();
+          if (Array.isArray(data) && data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
+            const postOffice = data[0].PostOffice[0];
+            setFormData((prev) => ({
+              ...prev,
+              city: postOffice.District || postOffice.Block || postOffice.Name || prev.city,
+              state: postOffice.State || prev.state,
+              country: 'India',
+            }));
+          }
+        }
+      } else {
+        // 2. Global Lookups (US, UK, CA, DE, FR, AU, etc.) via Zippopotam
+        const cleanZip = zip.trim();
+        const res = await fetch(`https://api.zippopotam.us/${countryCode.toLowerCase()}/${encodeURIComponent(cleanZip)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.places && data.places.length > 0) {
+            const place = data.places[0];
+            setFormData((prev) => ({
+              ...prev,
+              city: place['place name'] || prev.city,
+              state: place['state'] || place['state abbreviation'] || prev.state,
+              country: data.country || prev.country,
+            }));
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching global postal data:', err);
+    } finally {
+      setFetchingPincode(false);
+    }
+  };
+
+  const handlePincodeChange = (e) => {
+    const rawVal = e.target.value;
+    setFormData((prev) => ({ ...prev, zipCode: rawVal }));
+
+    // Trigger lookup when input matches typical postal formats
+    if (formData.countryCode === 'IN' && rawVal.replace(/\D/g, '').length === 6) {
+      fetchGlobalPostalData(rawVal, 'IN');
+    } else if (formData.countryCode !== 'IN' && rawVal.trim().length >= 4) {
+      fetchGlobalPostalData(rawVal, formData.countryCode);
+    }
+  };
+
+  const handleCountryChange = (e) => {
+    const selectedName = e.target.value;
+    const matched = COMMON_COUNTRIES.find((c) => c.name.toLowerCase() === selectedName.toLowerCase());
+    const code = matched ? matched.code : 'US';
+
+    setFormData((prev) => ({
+      ...prev,
+      country: selectedName,
+      countryCode: code,
+    }));
+
+    if (formData.zipCode) {
+      fetchGlobalPostalData(formData.zipCode, code);
+    }
+  };
 
   const getItemImage = (item) => {
     if (!item) return '';
@@ -124,7 +215,14 @@ export default function CheckoutPage() {
         color: item.color || 'Default',
         image: getItemImage(item),
       })),
-      shippingAddress: formData,
+      shippingAddress: {
+        street: formData.street,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        country: formData.country,
+        phone: formData.phone,
+      },
       totalAmount: grandTotal,
       discountApplied: discountAmount,
       couponCode: appliedCoupon?.code || null,
@@ -332,15 +430,55 @@ export default function CheckoutPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Country & Global ZIP Code Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1">City</label>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1 flex items-center gap-1">
+                      <Globe className="w-3.5 h-3.5 text-indigo-600" /> Country
+                    </label>
+                    <select
+                      value={formData.country}
+                      onChange={handleCountryChange}
+                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600 cursor-pointer"
+                    >
+                      {COMMON_COUNTRIES.map((c) => (
+                        <option key={c.code} value={c.name}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1 flex items-center justify-between">
+                      <span>ZIP / Postal Code</span>
+                      {fetchingPincode && (
+                        <span className="text-[10px] text-indigo-600 font-semibold flex items-center gap-1">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Auto-detecting...
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.zipCode}
+                      onChange={handlePincodeChange}
+                      placeholder={formData.countryCode === 'IN' ? 'e.g. 611001' : 'e.g. 90210'}
+                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
+                    />
+                  </div>
+                </div>
+
+                {/* Auto-filled Editable City & State Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1">City / District</label>
                     <input
                       type="text"
                       required
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      placeholder="Chennai"
+                      placeholder="e.g. Nagapattinam"
                       className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
                     />
                   </div>
@@ -352,32 +490,7 @@ export default function CheckoutPage() {
                       required
                       value={formData.state}
                       onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      placeholder="Tamil Nadu"
-                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1">ZIP / Postal Code</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.zipCode}
-                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-                      placeholder="600001"
-                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-gray-700 mb-1">Country</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.country}
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                      placeholder="e.g. Tamil Nadu"
                       className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
                     />
                   </div>

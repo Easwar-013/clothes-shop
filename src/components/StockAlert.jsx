@@ -1,21 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, Check, X, Send } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export default function StockAlert({ stock, productId, productName }) {
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
-  const [email, setEmail] = useState(session?.user?.email || "");
+  const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle"); // 'idle' | 'loading' | 'success' | 'error'
   const [errorMsg, setErrorMsg] = useState("");
 
-  if (stock > 0) return null;
+  // Pre-fill email only on initial load if user is logged in and field is empty
+  useEffect(() => {
+    if (session?.user?.email && !email) {
+      setEmail(session.user.email);
+    }
+  }, [session?.user?.email]);
+
+  if (Number(stock) > 0) return null;
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
-    if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail) {
+      setErrorMsg("Please enter a valid email address.");
+      setStatus("error");
+      return;
+    }
 
     setStatus("loading");
     setErrorMsg("");
@@ -25,9 +38,9 @@ export default function StockAlert({ stock, productId, productName }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId,
+          productId: productId?.toString(),
           productName,
-          email,
+          email: cleanEmail,
         }),
       });
 
@@ -46,12 +59,14 @@ export default function StockAlert({ stock, productId, productName }) {
 
   return (
     <div className="w-full space-y-3">
-      {/* Prominent, highly identifiable Notify Button */}
+      {/* Prominent Notify Button */}
       {!isOpen ? (
         <button
           type="button"
           onClick={() => {
-            if (session?.user?.email) setEmail(session.user.email);
+            if (session?.user?.email && !email) {
+              setEmail(session.user.email);
+            }
             setIsOpen(true);
           }}
           className="inline-flex items-center space-x-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-4 py-2.5 rounded-xl text-xs transition-all duration-200 border border-indigo-200 shadow-sm active:scale-95 group"
@@ -72,6 +87,7 @@ export default function StockAlert({ stock, productId, productName }) {
               onClick={() => {
                 setIsOpen(false);
                 setStatus("idle");
+                setErrorMsg("");
               }}
               className="text-gray-400 hover:text-gray-600 p-1 transition"
             >
@@ -83,7 +99,8 @@ export default function StockAlert({ stock, productId, productName }) {
             <div className="flex items-center space-x-2 text-emerald-700 bg-emerald-100/70 p-3 rounded-xl text-xs font-bold border border-emerald-200">
               <Check className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
-                We'll email you as soon as this item is back in stock!
+                We'll email you at {email} as soon as this item is back in
+                stock!
               </span>
             </div>
           ) : (

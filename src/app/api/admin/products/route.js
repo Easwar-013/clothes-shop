@@ -4,15 +4,6 @@ import Product from '@/models/Product';
 import StockAlert from '@/models/StockAlert';
 import nodemailer from 'nodemailer';
 
-// Configure Nodemailer transporter with Gmail
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASS,
-  },
-});
-
 // GET /api/admin/products - Fetch all products
 export async function GET() {
   try {
@@ -104,19 +95,32 @@ export async function PUT(req) {
     });
 
     // 4. RESTOCK CHECK: Trigger emails if stock went from 0 to > 0
-    if (existingProduct.stock === 0 && updatedProduct.stock > 0) {
+    if (existingProduct.stock <= 0 && updatedProduct.stock > 0) {
       const pendingAlerts = await StockAlert.find({ 
-        productId: id, 
+        productId: String(id), 
         notified: false 
       });
 
-      const baseUrl = process.env.NEXTAUTH_URL || 'https://clothes-shop-beta-black.vercel.app';
+      const gmailUser = process.env.GMAIL_USER?.trim();
+      const gmailPass = process.env.GMAIL_APP_PASS?.trim().replace(/\s+/g, '');
 
-      if (pendingAlerts.length > 0 && process.env.GMAIL_USER && process.env.GMAIL_APP_PASS) {
+      if (pendingAlerts.length > 0 && gmailUser && gmailPass) {
+        const transporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true,
+          auth: {
+            user: gmailUser,
+            pass: gmailPass,
+          },
+        });
+
+        const baseUrl = process.env.NEXTAUTH_URL || 'https://clothes-shop-beta-black.vercel.app';
+
         for (const alertRecord of pendingAlerts) {
           try {
             await transporter.sendMail({
-              from: `"Attire Store" <${process.env.GMAIL_USER}>`,
+              from: `"Attire Store" <${gmailUser}>`,
               to: alertRecord.email,
               subject: `🎉 Back in Stock: ${updatedProduct.title}!`,
               html: `
@@ -178,7 +182,7 @@ export async function DELETE(req) {
     }
 
     // Clean up any pending stock alerts for this deleted product
-    await StockAlert.deleteMany({ productId: id });
+    await StockAlert.deleteMany({ productId: String(id) });
 
     return NextResponse.json({ success: true, message: 'Product deleted successfully' });
   } catch (error) {

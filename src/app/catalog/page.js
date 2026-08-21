@@ -348,6 +348,7 @@ function CatalogContent() {
                   : rawPrice;
 
                 const isSaved = isInWishlist(product._id);
+                const hasSecondaryImage = Array.isArray(product.images) && product.images.length > 1;
 
                 return (
                   <div
@@ -357,11 +358,24 @@ function CatalogContent() {
                     <Link href={`/product/${product._id}`} className="block relative">
                       <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">
                         {product.images?.[0] ? (
-                          <img
-                            src={product.images[0]}
-                            alt={product.title}
-                            className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
-                          />
+                          <>
+                            {/* Primary Image */}
+                            <img
+                              src={product.images[0]}
+                              alt={product.title}
+                              className={`w-full h-full object-cover object-center transition-all duration-500 ease-out group-hover:scale-105 ${
+                                hasSecondaryImage ? 'group-hover:opacity-0' : ''
+                              }`}
+                            />
+                            {/* Dynamic Hover Secondary Image Angle */}
+                            {hasSecondaryImage && (
+                              <img
+                                src={product.images[1]}
+                                alt={`${product.title} Alternate View`}
+                                className="w-full h-full object-cover object-center absolute inset-0 opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 ease-out"
+                              />
+                            )}
+                          </>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
                             No Image
@@ -369,13 +383,13 @@ function CatalogContent() {
                         )}
 
                         {product.category && (
-                          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/90 backdrop-blur-md text-[9px] sm:text-[10px] font-bold text-gray-900 px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-md border border-gray-200 uppercase shadow-sm">
+                          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/90 backdrop-blur-md text-[9px] sm:text-[10px] font-bold text-gray-900 px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-md border border-gray-200 uppercase shadow-sm z-10">
                             {product.category}
                           </span>
                         )}
 
                         {hasOffer && (
-                          <span className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-red-600 text-white text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-md">
+                          <span className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-red-600 text-white text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-md z-10">
                             {rawOffer}% OFF
                           </span>
                         )}

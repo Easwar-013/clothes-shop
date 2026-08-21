@@ -20,7 +20,7 @@ export default function AdminProductsPage() {
     category: 'Shirts',
     sizes: ['S', 'M', 'L'],
     colors: ['Black', 'White'],
-    images: [''],
+    images: ['', ''],
     stock: 10,
     isFeatured: false,
   });
@@ -52,6 +52,9 @@ export default function AdminProductsPage() {
   const handleOpenModal = (product = null) => {
     if (product) {
       setEditingId(product._id);
+      const initialImages = Array.isArray(product.images) ? [...product.images] : [];
+      while (initialImages.length < 2) initialImages.push('');
+
       setForm({
         title: product.title || '',
         description: product.description || '',
@@ -60,7 +63,7 @@ export default function AdminProductsPage() {
         category: product.category || 'Shirts',
         sizes: product.sizes || [],
         colors: product.colors || [],
-        images: product.images?.length > 0 ? product.images : [''],
+        images: initialImages,
         stock: product.stock ?? 0,
         isFeatured: product.isFeatured || false,
       });
@@ -74,7 +77,7 @@ export default function AdminProductsPage() {
         category: 'Shirts',
         sizes: ['S', 'M', 'L'],
         colors: ['Black', 'White'],
-        images: [''],
+        images: ['', ''],
         stock: 10,
         isFeatured: false,
       });
@@ -82,8 +85,8 @@ export default function AdminProductsPage() {
     setIsModalOpen(true);
   };
 
-  // Convert File to Compressed Base64 String (~50KB)
-  const handleImageUpload = (e) => {
+  // Convert File to Compressed Base64 String (~50KB) for a specific slot index (0 or 1)
+  const handleImageUpload = (e, slotIndex) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -116,19 +119,41 @@ export default function AdminProductsPage() {
 
         // Compress image to JPEG format with 70% quality
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-        setForm((prev) => ({
-          ...prev,
-          images: [compressedBase64],
-        }));
+        setForm((prev) => {
+          const updatedImages = [...prev.images];
+          updatedImages[slotIndex] = compressedBase64;
+          return {
+            ...prev,
+            images: updatedImages,
+          };
+        });
       };
       img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
 
+  const handleRemoveImage = (slotIndex) => {
+    setForm((prev) => {
+      const updatedImages = [...prev.images];
+      updatedImages[slotIndex] = '';
+      return {
+        ...prev,
+        images: updatedImages,
+      };
+    });
+  };
+
   // Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const cleanedImages = form.images.filter((img) => img && img.trim() !== '');
+
+    if (cleanedImages.length === 0) {
+      alert('Please upload at least the primary product image.');
+      return;
+    }
 
     const payload = {
       title: form.title,
@@ -139,7 +164,7 @@ export default function AdminProductsPage() {
       stock: Number(form.stock) || 0,
       sizes: form.sizes,
       colors: typeof form.colors === 'string' ? form.colors.split(',').map((c) => c.trim()) : form.colors,
-      images: form.images.filter((img) => img.trim() !== ''),
+      images: cleanedImages,
       isFeatured: form.isFeatured || false,
     };
 
@@ -278,6 +303,11 @@ export default function AdminProductsPage() {
                               alt={prod.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
+                            {prod.images?.[1] && (
+                              <span className="absolute bottom-0.5 right-0.5 bg-black/75 text-white text-[8px] font-bold px-1 rounded">
+                                2 imgs
+                              </span>
+                            )}
                           </div>
                           <div>
                             <p className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors text-sm">
@@ -499,38 +529,92 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              {/* Photo Upload Input */}
-              <div>
-                <label className="block text-xs font-bold uppercase text-gray-700 mb-1">
-                  Product Photo
-                </label>
-                
-                <div className="flex items-center space-x-4">
-                  <div className="relative w-20 h-20 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
-                    {form.images[0] ? (
-                      <img
-                        src={form.images[0]}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-gray-300" />
-                    )}
+              {/* Dual Photo Upload Inputs */}
+              <div className="space-y-4 pt-2">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold uppercase text-gray-700">
+                      Primary Photo <span className="text-red-500">*</span>
+                    </label>
+                    <span className="text-[10px] text-gray-400">Front / Default Angle</span>
                   </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="relative w-20 h-20 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
+                      {form.images[0] ? (
+                        <>
+                          <img
+                            src={form.images[0]}
+                            alt="Primary Preview"
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(0)}
+                            className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 hover:bg-red-600 transition"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </>
+                      ) : (
+                        <ImageIcon className="w-7 h-7 text-gray-300" />
+                      )}
+                    </div>
+                    <label className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-indigo-600 rounded-2xl p-3.5 cursor-pointer transition bg-gray-50/50 hover:bg-indigo-50/30 group">
+                      <Upload className="w-4 h-4 text-gray-400 group-hover:text-indigo-600 mb-1 transition" />
+                      <span className="text-xs font-bold text-gray-700 group-hover:text-indigo-600 transition">
+                        {form.images[0] ? 'Replace Primary Image' : 'Upload Primary Image'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 0)}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
 
-                  <label className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-indigo-600 rounded-2xl p-4 cursor-pointer transition bg-gray-50/50 hover:bg-indigo-50/30 group">
-                    <Upload className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 mb-1 transition" />
-                    <span className="text-xs font-bold text-gray-700 group-hover:text-indigo-600 transition">
-                      Click to upload image file
-                    </span>
-                    <span className="text-[10px] text-gray-400 mt-0.5">PNG, JPG, or WEBP (Compressed automatically)</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold uppercase text-gray-700">
+                      Secondary Photo <span className="text-[10px] text-gray-400 font-normal">(Opt)</span>
+                    </label>
+                    <span className="text-[10px] text-indigo-600 font-semibold">Hover / Back Angle</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="relative w-20 h-20 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
+                      {form.images[1] ? (
+                        <>
+                          <img
+                            src={form.images[1]}
+                            alt="Secondary Preview"
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(1)}
+                            className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 hover:bg-red-600 transition"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </>
+                      ) : (
+                        <ImageIcon className="w-7 h-7 text-gray-300" />
+                      )}
+                    </div>
+                    <label className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-indigo-600 rounded-2xl p-3.5 cursor-pointer transition bg-gray-50/50 hover:bg-indigo-50/30 group">
+                      <Upload className="w-4 h-4 text-gray-400 group-hover:text-indigo-600 mb-1 transition" />
+                      <span className="text-xs font-bold text-gray-700 group-hover:text-indigo-600 transition">
+                        {form.images[1] ? 'Replace Hover Image' : 'Upload Secondary / Hover Image'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 1)}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
 

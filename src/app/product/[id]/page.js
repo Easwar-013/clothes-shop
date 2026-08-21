@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useRef, use } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import StockAlert from '@/components/StockAlert';
 import ClothesLoader from '@/components/ClothesLoader';
@@ -18,7 +19,8 @@ import {
   CheckCircle2,
   Camera,
   X,
-  Trash2
+  Trash2,
+  CreditCard
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,6 +28,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
   const params = use(paramsPromise);
   const { id } = params;
 
+  const router = useRouter();
   const { data: session } = useSession();
   const { addToCart } = useCart();
   
@@ -56,6 +59,23 @@ export default function ProductDetailPage({ params: paramsPromise }) {
   const [selectedImage, setSelectedImage] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+
+  // Sticky Mobile Bottom Bar Observer
+  const mainCtaRef = useRef(null);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+
+  useEffect(() => {
+    if (!mainCtaRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowStickyBar(!entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(mainCtaRef.current);
+    return () => observer.disconnect();
+  }, [product, loading]);
 
   useEffect(() => {
     try {
@@ -182,9 +202,16 @@ export default function ProductDetailPage({ params: paramsPromise }) {
 
   const handleAddToCart = () => {
     if (!product || product.stock === 0) return;
-    addToCart({ ...product, price: finalPrice }, selectedSize, selectedColor, quantity);
+    addToCart({ ...product, price: finalPrice }, selectedSize, selectedColor, Number(quantity) || 1, true);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+  };
+
+  // Instant One-Click Checkout
+  const handleBuyNow = () => {
+    if (!product || product.stock === 0) return;
+    addToCart({ ...product, price: finalPrice }, selectedSize, selectedColor, Number(quantity) || 1, false);
+    router.push('/checkout');
   };
 
   // Image Upload with Browser Canvas Compression (~50KB)
@@ -316,7 +343,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
   const filteredRecentlyViewed = recentlyViewed.filter((item) => item._id !== product._id);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white text-gray-900 min-h-screen">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white text-gray-900 min-h-screen pb-24 sm:pb-10">
       {/* Breadcrumb */}
       <nav className="flex items-center text-xs font-semibold text-gray-400 mb-8 space-x-2">
         <Link href="/" className="hover:text-indigo-600 transition">Home</Link>
@@ -398,7 +425,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
               )}
             </div>
 
-            {/* Integrated StockAlert Component with required props */}
+            {/* Integrated StockAlert Component */}
             <div className="mt-4">
               <StockAlert 
                 stock={product.stock ?? 0} 
@@ -466,14 +493,16 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                 </label>
                 <div className="inline-flex items-center border border-gray-200 rounded-xl bg-gray-50/50 p-1">
                   <button
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, Number(q) - 1))}
                     className="w-8 h-8 flex items-center justify-center font-bold text-gray-600 hover:bg-white rounded-lg transition"
                   >
                     -
                   </button>
                   <span className="px-4 text-sm font-black text-gray-900">{quantity}</span>
                   <button
-                    onClick={() => setQuantity((q) => Math.min(product.stock || 99, q + 1))}
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.min(product.stock || 99, Number(q) + 1))}
                     className="w-8 h-8 flex items-center justify-center font-bold text-gray-600 hover:bg-white rounded-lg transition"
                   >
                     +
@@ -482,21 +511,40 @@ export default function ProductDetailPage({ params: paramsPromise }) {
               </div>
             )}
 
-            {/* Add To Cart Button */}
-            <button
-              onClick={handleAddToCart}
-              disabled={product.stock === 0}
-              className={`w-full py-4 rounded-2xl font-bold text-sm transition flex items-center justify-center space-x-2 shadow-lg ${
-                product.stock === 0
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                  : added
-                  ? 'bg-green-600 text-white shadow-green-200'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
-              }`}
-            >
-              {added ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
-              <span>{product.stock === 0 ? 'Out of Stock' : added ? 'Added to Cart!' : 'Add to Cart'}</span>
-            </button>
+            {/* Action Buttons: Add to Cart + Instant Buy Now */}
+            <div ref={mainCtaRef} className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={product.stock === 0}
+                  className={`flex-1 py-3.5 px-6 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-2 shadow-md ${
+                    product.stock === 0
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                      : added
+                      ? 'bg-emerald-600 text-white shadow-emerald-200'
+                      : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+                  }`}
+                >
+                  {added ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
+                  <span>{product.stock === 0 ? 'Out of Stock' : added ? 'Added to Cart!' : 'Add to Cart'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  disabled={product.stock === 0}
+                  className={`flex-1 py-3.5 px-6 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/25 active:scale-98 ${
+                    product.stock === 0
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>Buy Now</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50/70 rounded-2xl border border-gray-100 text-center">
@@ -515,6 +563,52 @@ export default function ProductDetailPage({ params: paramsPromise }) {
           </div>
         </div>
       </div>
+
+      {/* Sticky Mobile Add To Cart & Buy Now Bottom Bar */}
+      {showStickyBar && (
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 p-3 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-300 gap-2">
+          <div className="flex items-center space-x-2 truncate mr-1">
+            {selectedImage && (
+              <img
+                src={selectedImage}
+                alt={product.title}
+                className="w-10 h-10 rounded-xl object-cover border border-gray-200 shrink-0"
+              />
+            )}
+            <div className="truncate">
+              <p className="font-bold text-gray-900 text-xs truncate leading-tight">{product.title}</p>
+              <span className="text-xs font-black text-indigo-600">₹{finalPrice.toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={product.stock === 0}
+              className={`p-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center border active:scale-95 ${
+                product.stock === 0
+                  ? 'bg-gray-100 text-gray-400 border-gray-200'
+                  : added
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+              }`}
+            >
+              {added ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBuyNow}
+              disabled={product.stock === 0}
+              className="py-2.5 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1.5 shadow-md active:scale-95 disabled:bg-gray-200 disabled:text-gray-400"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Buy Now</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Recommended Products Module */}
       {recommendations.length > 0 && (

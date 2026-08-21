@@ -10,7 +10,6 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Get unique key for the current user (e.g. attire_cart_user@email.com)
   const userId = session?.user?.email || session?.user?.id;
   const storageKey = userId ? `attire_cart_${userId}` : null;
 
@@ -29,54 +28,66 @@ export function CartProvider({ children }) {
         setCart([]);
       }
     } else if (status === 'unauthenticated') {
-      // Clear memory state on sign-out without deleting user's saved cart in localStorage
       setCart([]);
     }
   }, [status, storageKey]);
 
-  // 2. Automatically save cart to user-specific localStorage whenever cart updates
+  // 2. Automatically save cart to user-specific localStorage
   useEffect(() => {
     if (typeof window !== 'undefined' && status === 'authenticated' && storageKey) {
       localStorage.setItem(storageKey, JSON.stringify(cart));
     }
   }, [cart, storageKey, status]);
 
-  const addToCart = (product, size = 'M', color = 'Default', quantity = 1) => {
+  const addToCart = (product, size = 'M', color = 'Default', quantity = 1, openDrawer = true) => {
+    const parsedQty = Math.max(1, Number(quantity) || 1);
+    const prodId = String(product._id || product.id);
+
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex(
-        (item) => item._id === product._id && item.size === size && item.color === color
+        (item) => String(item._id) === prodId && item.size === size && item.color === color
       );
 
       if (existingIndex > -1) {
         const updated = [...prevCart];
-        updated[existingIndex].quantity += quantity;
+        const currentQty = Number(updated[existingIndex].quantity) || 1;
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: currentQty + parsedQty,
+        };
         return updated;
       }
 
-      return [...prevCart, { ...product, size, color, quantity }];
+      return [...prevCart, { ...product, _id: prodId, size, color, quantity: parsedQty }];
     });
 
-    setIsCartOpen(true);
+    if (openDrawer) {
+      setIsCartOpen(true);
+    }
   };
 
   const removeFromCart = (productId, size, color) => {
+    const prodId = String(productId);
     setCart((prevCart) =>
       prevCart.filter(
-        (item) => !(item._id === productId && item.size === size && item.color === color)
+        (item) => !(String(item._id) === prodId && item.size === size && item.color === color)
       )
     );
   };
 
   const updateQuantity = (productId, size, color, newQty) => {
-    if (newQty <= 0) {
+    const parsedQty = Number(newQty);
+    const prodId = String(productId);
+
+    if (parsedQty <= 0) {
       removeFromCart(productId, size, color);
       return;
     }
 
     setCart((prevCart) =>
       prevCart.map((item) =>
-        item._id === productId && item.size === size && item.color === color
-          ? { ...item, quantity: newQty }
+        String(item._id) === prodId && item.size === size && item.color === color
+          ? { ...item, quantity: parsedQty }
           : item
       )
     );
@@ -89,9 +100,9 @@ export function CartProvider({ children }) {
     }
   };
 
-  const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+  const totalItems = cart.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
   const cartTotal = cart.reduce(
-    (total, item) => total + (item.price || 0) * (item.quantity || 1),
+    (total, item) => total + (Number(item.price) || 0) * (Number(item.quantity) || 1),
     0
   );
 

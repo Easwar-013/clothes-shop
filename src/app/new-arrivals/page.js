@@ -8,6 +8,7 @@ import { Sparkles, ShoppingBag, Check, Heart, ChevronLeft, ChevronRight } from '
 import ClothesLoader from '@/components/ClothesLoader';
 
 const ITEMS_PER_PAGE = 12;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 
 function NewArrivalsContent() {
   const { addToCart } = useCart();
@@ -117,6 +118,11 @@ function NewArrivalsContent() {
               const isSaved = isInWishlist(product._id);
               const hasSecondaryImage = Array.isArray(product.images) && product.images.length > 1;
 
+              // Only show "NEW" badge if product is less than 30 days old
+              const isProductNew = product.createdAt
+                ? (Date.now() - new Date(product.createdAt).getTime()) < THIRTY_DAYS_MS
+                : false;
+
               return (
                 <div
                   key={product._id}
@@ -147,9 +153,12 @@ function NewArrivalsContent() {
                         </div>
                       )}
 
-                      <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-indigo-600 text-white text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-md z-10">
-                        New
-                      </span>
+                      {/* 30-Day Conditional NEW Badge */}
+                      {isProductNew && (
+                        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-indigo-600 text-white text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-md z-10">
+                          New
+                        </span>
+                      )}
 
                       {hasOffer && (
                         <span className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-red-600 text-white text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-md z-10">

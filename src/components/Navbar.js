@@ -14,6 +14,8 @@ import {
   ExternalLink, 
   Tag, 
   MessageSquare,
+  Flame,
+  Sparkles,
   Menu,
   X
 } from 'lucide-react';
@@ -58,6 +60,7 @@ function NavbarContent() {
   const navLinks = isAdminPage
     ? [
         { label: 'Products', href: '/admin/products', icon: Package, active: isActive('/admin/products') },
+        { label: 'Trending', href: '/admin/trending', icon: Flame, active: isActive('/admin/trending') },
         { label: 'Orders', href: '/admin/orders', icon: Store, active: isActive('/admin/orders') },
         { label: 'Coupons', href: '/admin/coupons', icon: Tag, active: isActive('/admin/coupons') },
         { label: 'Messages', href: '/admin/messages', icon: MessageSquare, active: isActive('/admin/messages') },
@@ -65,6 +68,7 @@ function NavbarContent() {
     : [
         { label: 'Home', href: '/', active: isActive('/') },
         { label: 'Catalog', href: '/catalog', active: isActive('/catalog') },
+        { label: 'New Arrivals', href: '/new-arrivals', active: isActive('/new-arrivals') },
         { label: 'Shirts', href: '/catalog?category=Shirts', active: isActive('/catalog', 'Shirts') },
         { label: 'Dresses', href: '/catalog?category=Dresses', active: isActive('/catalog', 'Dresses') },
         { label: 'Jackets', href: '/catalog?category=Jackets', active: isActive('/catalog', 'Jackets') },
@@ -94,8 +98,8 @@ function NavbarContent() {
           )}
         </div>
 
-        {/* Dynamic Desktop Navigation Links with Smooth Active Indicators */}
-        <div className="hidden md:flex items-center space-x-8 text-sm font-semibold text-gray-600 h-full">
+        {/* Dynamic Desktop Navigation Links */}
+        <div className="hidden md:flex items-center space-x-7 text-sm font-semibold text-gray-600 h-full">
           {navLinks.map((link) => {
             const Icon = link.icon;
             return (
@@ -106,7 +110,7 @@ function NavbarContent() {
                   link.active ? 'text-indigo-600 font-bold' : 'hover:text-indigo-600'
                 }`}
               >
-                {Icon && <Icon className="w-4 h-4 transition-transform duration-200 hover:scale-110" />}
+                {Icon && <Icon className={`w-4 h-4 transition-transform duration-200 hover:scale-110 ${link.label === 'Trending' ? 'text-amber-500' : ''}`} />}
                 <span>{link.label}</span>
                 <span
                   className={`absolute bottom-0 left-0 h-0.5 bg-indigo-600 rounded-t-full transition-all duration-300 ease-out ${
@@ -164,7 +168,7 @@ function NavbarContent() {
             </>
           )}
 
-          {/* User Profile Avatar with Smooth Dropdown Animation */}
+          {/* User Profile Avatar with Dropdown */}
           {session ? (
             <div className="relative">
               <button
@@ -186,7 +190,7 @@ function NavbarContent() {
                 )}
               </button>
 
-              {/* Animated Profile Dropdown */}
+              {/* Profile Dropdown */}
               <div
                 onMouseLeave={() => setDropdownOpen(false)}
                 className={`absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 text-sm z-50 transition-all duration-200 ease-out origin-top-right ${
@@ -228,14 +232,24 @@ function NavbarContent() {
 
                   {isAdminUser && (
                     isAdminPage ? (
-                      <Link
-                        href="/catalog"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors duration-150 font-medium"
-                      >
-                        <Store className="w-4 h-4 text-indigo-600" />
-                        <span>Go to Storefront</span>
-                      </Link>
+                      <>
+                        <Link
+                          href="/admin/trending"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors duration-150 font-medium"
+                        >
+                          <Flame className="w-4 h-4 text-amber-500" />
+                          <span>Trending Products</span>
+                        </Link>
+                        <Link
+                          href="/catalog"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors duration-150 font-medium"
+                        >
+                          <Store className="w-4 h-4 text-indigo-600" />
+                          <span>Go to Storefront</span>
+                        </Link>
+                      </>
                     ) : (
                       <Link
                         href="/admin/products"
@@ -286,7 +300,7 @@ function NavbarContent() {
                     : 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600'
                 }`}
               >
-                {Icon && <Icon className="w-4 h-4" />}
+                {Icon && <Icon className={`w-4 h-4 ${link.label === 'Trending' ? 'text-amber-500' : ''}`} />}
                 <span>{link.label}</span>
               </Link>
             );

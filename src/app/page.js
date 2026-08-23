@@ -33,15 +33,15 @@ export default function HomePage() {
         if (data.success && data.products?.length > 0) {
           const rawProducts = data.products;
 
-          const offerProducts = rawProducts
-            .filter((p) => Number(p.offer) > 0)
-            .sort((a, b) => Number(b.offer) - Number(a.offer));
+          // 1. Prioritize Admin-Selected Trending Products (isFeatured === true)
+          const featuredProducts = rawProducts.filter((p) => p.isFeatured === true);
 
-          const nonOfferProducts = rawProducts
-            .filter((p) => !p.offer || Number(p.offer) === 0)
-            .sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0));
+          // 2. Fallback to Offer and Latest products if no trending items selected
+          const nonFeatured = rawProducts
+            .filter((p) => !p.isFeatured)
+            .sort((a, b) => Number(b.offer || 0) - Number(a.offer || 0));
 
-          const combined = [...offerProducts, ...nonOfferProducts];
+          const combined = featuredProducts.length > 0 ? featuredProducts : nonFeatured;
           setProducts(combined);
         }
       } catch (err) {
@@ -57,7 +57,7 @@ export default function HomePage() {
   // Multiply products to ensure a seamless infinite scroll strip
   const displayProducts = products.length > 0 ? [...products, ...products, ...products, ...products] : [];
 
-  // Mobile-Compatible Auto-Scroll Engine
+  // Auto-Scroll Engine
   useEffect(() => {
     const container = scrollRef.current;
     if (loading || displayProducts.length === 0 || !container) return;
@@ -66,7 +66,6 @@ export default function HomePage() {
 
     const step = () => {
       if (!isPaused && container) {
-        // Reset position smoothly when reaching the end of the loop
         if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 5) {
           accumulatedScroll.current = 1;
           container.scrollLeft = 1;
@@ -96,13 +95,7 @@ export default function HomePage() {
     const defaultSize = product.sizes?.[0] || 'M';
     const defaultColor = product.colors?.[0] || 'Default';
 
-    const itemToAdd = {
-      ...product,
-      price: finalPrice,
-    };
-
-    addToCart(itemToAdd, defaultSize, defaultColor, 1);
-    
+    addToCart({ ...product, price: finalPrice }, defaultSize, defaultColor, 1);
     setAddedId(product._id);
     setTimeout(() => setAddedId(null), 1500);
   };
@@ -231,16 +224,20 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. Smooth Mobile & Desktop Trending Section */}
+      {/* 4. Trending Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex justify-between items-end">
           <div>
+            <div className="inline-flex items-center space-x-1.5 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Handpicked Collection</span>
+            </div>
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Trending Now</h2>
-            <p className="text-gray-500 text-sm mt-1">Handpicked favorites from our latest catalog.</p>
+            <p className="text-gray-500 text-sm mt-1">Discover what our community is loving right now.</p>
           </div>
 
           <Link href="/catalog" className="text-indigo-600 font-bold text-sm hover:underline flex items-center space-x-1">
-            <span>View Catalog</span>
+            <span>View Full Catalog</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

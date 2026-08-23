@@ -152,7 +152,7 @@ export default function HomePage() {
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
-              href="/catalog?category=Shirts"
+              href="/new-arrivals"
               className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold px-6 py-3.5 rounded-xl border border-white/20 transition text-sm"
             >
               View New Arrivals

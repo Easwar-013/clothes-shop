@@ -5,8 +5,21 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { Search, Filter, ShoppingBag, Check, SlidersHorizontal, Heart, RotateCcw, X } from 'lucide-react';
+import { 
+  Search, 
+  Filter, 
+  ShoppingBag, 
+  Check, 
+  SlidersHorizontal, 
+  Heart, 
+  RotateCcw, 
+  X,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
 import ClothesLoader from '@/components/ClothesLoader';
+
+const ITEMS_PER_PAGE = 12;
 
 function CatalogContent() {
   const { addToCart } = useCart();
@@ -18,6 +31,7 @@ function CatalogContent() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addedId, setAddedId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Mobile Filter Drawer Toggle State
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -33,6 +47,7 @@ function CatalogContent() {
   useEffect(() => {
     const urlCategory = searchParams.get('category') || '';
     setCategory(urlCategory);
+    setCurrentPage(1);
   }, [searchParams]);
 
   // Fetch complete product list once on initial load
@@ -110,6 +125,25 @@ function CatalogContent() {
     });
   }, [products, search, category, selectedSize, maxPrice]);
 
+  // Reset page to 1 whenever filters or search terms change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, category, selectedSize, maxPrice]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1;
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handleCategorySelect = (selectedCat) => {
     setCategory(selectedCat);
     setShowMobileFilters(false);
@@ -141,6 +175,7 @@ function CatalogContent() {
     setSelectedSize('');
     setMaxPrice(50000);
     setShowMobileFilters(false);
+    setCurrentPage(1);
     router.push('/catalog');
   };
 
@@ -320,6 +355,14 @@ function CatalogContent() {
             </div>
           )}
 
+          {/* Results Summary Bar */}
+          {!initialLoading && filteredProducts.length > 0 && (
+            <div className="flex items-center justify-between pb-4 mb-6 border-b border-gray-100 text-xs font-bold text-gray-500">
+              <span>Showing {paginatedProducts.length} of {filteredProducts.length} products</span>
+              <span>Page {currentPage} of {totalPages}</span>
+            </div>
+          )}
+
           {initialLoading ? (
             <ClothesLoader text="Loading collection..." />
           ) : filteredProducts.length === 0 ? (
@@ -337,122 +380,161 @@ function CatalogContent() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-              {filteredProducts.map((product) => {
-                const rawPrice = Number(product.price) || 0;
-                const rawOffer = Number(product.offer) || 0;
-                const hasOffer = rawOffer > 0;
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+                {paginatedProducts.map((product) => {
+                  const rawPrice = Number(product.price) || 0;
+                  const rawOffer = Number(product.offer) || 0;
+                  const hasOffer = rawOffer > 0;
 
-                const finalPrice = hasOffer
-                  ? rawPrice - (rawPrice * rawOffer) / 100
-                  : rawPrice;
+                  const finalPrice = hasOffer
+                    ? rawPrice - (rawPrice * rawOffer) / 100
+                    : rawPrice;
 
-                const isSaved = isInWishlist(product._id);
-                const hasSecondaryImage = Array.isArray(product.images) && product.images.length > 1;
+                  const isSaved = isInWishlist(product._id);
+                  const hasSecondaryImage = Array.isArray(product.images) && product.images.length > 1;
 
-                return (
-                  <div
-                    key={product._id}
-                    className="group bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 ease-out flex flex-col justify-between relative hover:-translate-y-1"
-                  >
-                    <Link href={`/product/${product._id}`} className="block relative">
-                      <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">
-                        {product.images?.[0] ? (
-                          <>
-                            {/* Primary Image */}
-                            <img
-                              src={product.images[0]}
-                              alt={product.title}
-                              className={`w-full h-full object-cover object-center transition-all duration-500 ease-out group-hover:scale-105 ${
-                                hasSecondaryImage ? 'group-hover:opacity-0' : ''
-                              }`}
-                            />
-                            {/* Dynamic Hover Secondary Image Angle */}
-                            {hasSecondaryImage && (
-                              <img
-                                src={product.images[1]}
-                                alt={`${product.title} Alternate View`}
-                                className="w-full h-full object-cover object-center absolute inset-0 opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 ease-out"
-                              />
-                            )}
-                          </>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                            No Image
-                          </div>
-                        )}
-
-                        {product.category && (
-                          <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/90 backdrop-blur-md text-[9px] sm:text-[10px] font-bold text-gray-900 px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-md border border-gray-200 uppercase shadow-sm z-10">
-                            {product.category}
-                          </span>
-                        )}
-
-                        {hasOffer && (
-                          <span className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-red-600 text-white text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-md z-10">
-                            {rawOffer}% OFF
-                          </span>
-                        )}
-                      </div>
-                    </Link>
-
-                    <button
-                      onClick={(e) => toggleWishlist(product, e)}
-                      className="absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 sm:p-2 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-gray-100 hover:scale-110 active:scale-90 transition-all duration-200 z-10"
-                      aria-label="Save to Wishlist"
+                  return (
+                    <div
+                      key={product._id}
+                      className="group bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 ease-out flex flex-col justify-between relative hover:-translate-y-1"
                     >
-                      <Heart
-                        className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors duration-200 ${
-                          isSaved ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:text-red-500'
-                        }`}
-                      />
-                    </button>
+                      <Link href={`/product/${product._id}`} className="block relative">
+                        <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">
+                          {product.images?.[0] ? (
+                            <>
+                              {/* Primary Image */}
+                              <img
+                                src={product.images[0]}
+                                alt={product.title}
+                                className={`w-full h-full object-cover object-center transition-all duration-500 ease-out group-hover:scale-105 ${
+                                  hasSecondaryImage ? 'group-hover:opacity-0' : ''
+                                }`}
+                              />
+                              {/* Dynamic Hover Secondary Image Angle */}
+                              {hasSecondaryImage && (
+                                <img
+                                  src={product.images[1]}
+                                  alt={`${product.title} Alternate View`}
+                                  className="w-full h-full object-cover object-center absolute inset-0 opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 ease-out"
+                                />
+                              )}
+                            </>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                              No Image
+                            </div>
+                          )}
 
-                    <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between">
-                      <div>
-                        <Link href={`/product/${product._id}`}>
-                          <h2 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-1 hover:text-indigo-600 transition-colors duration-150">
-                            {product.title}
-                          </h2>
-                        </Link>
-                        <p className="text-gray-500 text-[11px] sm:text-xs mt-0.5 sm:mt-1 line-clamp-1 sm:line-clamp-2">
-                          {product.description || 'No description available.'}
-                        </p>
-                      </div>
+                          {product.category && (
+                            <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/90 backdrop-blur-md text-[9px] sm:text-[10px] font-bold text-gray-900 px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-md border border-gray-200 uppercase shadow-sm z-10">
+                              {product.category}
+                            </span>
+                          )}
 
-                      <div className="flex items-center justify-between mt-2 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-100">
-                        <div className="flex flex-col sm:flex-row sm:items-baseline sm:space-x-1.5">
-                          <span className="text-sm sm:text-base font-black text-gray-900">
-                            ₹{finalPrice.toLocaleString('en-IN')}
-                          </span>
                           {hasOffer && (
-                            <span className="text-[10px] sm:text-xs font-bold text-gray-400 line-through">
-                              ₹{rawPrice.toLocaleString('en-IN')}
+                            <span className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-red-600 text-white text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-md z-10">
+                              {rawOffer}% OFF
                             </span>
                           )}
                         </div>
+                      </Link>
 
-                        <button
-                          onClick={(e) => handleQuickAdd(product, finalPrice, e)}
-                          className={`p-2 sm:p-2.5 rounded-xl active:scale-90 transition-all duration-200 flex items-center justify-center ${
-                            addedId === product._id
-                              ? 'bg-green-600 text-white scale-105'
-                              : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
+                      <button
+                        onClick={(e) => toggleWishlist(product, e)}
+                        className="absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 sm:p-2 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-gray-100 hover:scale-110 active:scale-90 transition-all duration-200 z-10"
+                        aria-label="Save to Wishlist"
+                      >
+                        <Heart
+                          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors duration-200 ${
+                            isSaved ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:text-red-500'
                           }`}
-                          aria-label="Quick Add to Cart"
-                        >
-                          {addedId === product._id ? (
-                            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          ) : (
-                            <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          )}
-                        </button>
+                        />
+                      </button>
+
+                      <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between">
+                        <div>
+                          <Link href={`/product/${product._id}`}>
+                            <h2 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-1 hover:text-indigo-600 transition-colors duration-150">
+                              {product.title}
+                            </h2>
+                          </Link>
+                          <p className="text-gray-500 text-[11px] sm:text-xs mt-0.5 sm:mt-1 line-clamp-1 sm:line-clamp-2">
+                            {product.description || 'No description available.'}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-100">
+                          <div className="flex flex-col sm:flex-row sm:items-baseline sm:space-x-1.5">
+                            <span className="text-sm sm:text-base font-black text-gray-900">
+                              ₹{finalPrice.toLocaleString('en-IN')}
+                            </span>
+                            {hasOffer && (
+                              <span className="text-[10px] sm:text-xs font-bold text-gray-400 line-through">
+                                ₹{rawPrice.toLocaleString('en-IN')}
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={(e) => handleQuickAdd(product, finalPrice, e)}
+                            className={`p-2 sm:p-2.5 rounded-xl active:scale-90 transition-all duration-200 flex items-center justify-center ${
+                              addedId === product._id
+                                ? 'bg-green-600 text-white scale-105'
+                                : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
+                            }`}
+                            aria-label="Quick Add to Cart"
+                          >
+                            {addedId === product._id ? (
+                              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            ) : (
+                              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+
+              {/* Pagination Section */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center space-x-2 mt-12 pt-8 border-t border-gray-100">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`w-9 h-9 rounded-xl text-xs font-bold transition ${
+                        currentPage === pageNum
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                          : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    aria-label="Next Page"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>

@@ -6,6 +6,8 @@ import { ArrowRight, ShoppingBag, Truck, RefreshCw, ShieldCheck, Sparkles, Check
 import { useCart } from '@/context/CartContext';
 import ClothesLoader from '@/components/ClothesLoader';
 
+const TRENDING_ORDER_STORAGE_KEY = 'attire_trending_selection_order';
+
 export default function HomePage() {
   const { addToCart } = useCart();
   const [products, setProducts] = useState([]);
@@ -33,15 +35,37 @@ export default function HomePage() {
         if (data.success && data.products?.length > 0) {
           const rawProducts = data.products;
 
-          // 1. Prioritize Admin-Selected Trending Products (isFeatured === true)
+          // 1. Read admin selection sequence from localStorage
+          let savedOrder = [];
+          try {
+            const stored = localStorage.getItem(TRENDING_ORDER_STORAGE_KEY);
+            if (stored) savedOrder = JSON.parse(stored);
+          } catch (e) {
+            console.error('Failed to read trending order', e);
+          }
+
           const featuredProducts = rawProducts.filter((p) => p.isFeatured === true);
 
-          // 2. Fallback to Offer and Latest products if no trending items selected
+          // 2. Sort featured products by the exact admin slot selection order
+          let orderedFeatured = [];
+          if (savedOrder.length > 0) {
+            orderedFeatured = savedOrder
+              .map((id) => featuredProducts.find((p) => p._id === id))
+              .filter(Boolean);
+
+            // Add any newly featured products not yet in localStorage sequence
+            const missing = featuredProducts.filter((p) => !savedOrder.includes(p._id));
+            orderedFeatured = [...orderedFeatured, ...missing];
+          } else {
+            orderedFeatured = featuredProducts;
+          }
+
+          // 3. Fallback to offers if no items marked featured
           const nonFeatured = rawProducts
             .filter((p) => !p.isFeatured)
             .sort((a, b) => Number(b.offer || 0) - Number(a.offer || 0));
 
-          const combined = featuredProducts.length > 0 ? featuredProducts : nonFeatured;
+          const combined = orderedFeatured.length > 0 ? orderedFeatured.slice(0, 7) : nonFeatured;
           setProducts(combined);
         }
       } catch (err) {

@@ -15,7 +15,6 @@ import {
   Tag, 
   MessageSquare,
   Flame,
-  Sparkles,
   Menu,
   X
 } from 'lucide-react';
@@ -68,7 +67,6 @@ function NavbarContent() {
     : [
         { label: 'Home', href: '/', active: isActive('/') },
         { label: 'Catalog', href: '/catalog', active: isActive('/catalog') },
-        { label: 'New Arrivals', href: '/new-arrivals', active: isActive('/new-arrivals') },
         { label: 'Shirts', href: '/catalog?category=Shirts', active: isActive('/catalog', 'Shirts') },
         { label: 'Dresses', href: '/catalog?category=Dresses', active: isActive('/catalog', 'Dresses') },
         { label: 'Jackets', href: '/catalog?category=Jackets', active: isActive('/catalog', 'Jackets') },
@@ -110,7 +108,7 @@ function NavbarContent() {
                   link.active ? 'text-indigo-600 font-bold' : 'hover:text-indigo-600'
                 }`}
               >
-                {Icon && <Icon className={`w-4 h-4 transition-transform duration-200 hover:scale-110 ${link.label === 'Trending' ? 'text-amber-500' : ''}`} />}
+                {Icon && <Icon className="w-4 h-4 transition-transform duration-200 hover:scale-110" />}
                 <span>{link.label}</span>
                 <span
                   className={`absolute bottom-0 left-0 h-0.5 bg-indigo-600 rounded-t-full transition-all duration-300 ease-out ${
@@ -238,7 +236,7 @@ function NavbarContent() {
                           onClick={() => setDropdownOpen(false)}
                           className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors duration-150 font-medium"
                         >
-                          <Flame className="w-4 h-4 text-amber-500" />
+                          <Flame className="w-4 h-4 text-indigo-600" />
                           <span>Trending Products</span>
                         </Link>
                         <Link
@@ -300,7 +298,7 @@ function NavbarContent() {
                     : 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600'
                 }`}
               >
-                {Icon && <Icon className={`w-4 h-4 ${link.label === 'Trending' ? 'text-amber-500' : ''}`} />}
+                {Icon && <Icon className="w-4 h-4" />}
                 <span>{link.label}</span>
               </Link>
             );

@@ -8,6 +8,7 @@ const MAX_TRENDING_LIMIT = 7;
 
 export default function AdminTrendingPage() {
   const [products, setProducts] = useState([]);
+  const [trendingOrderIds, setTrendingOrderIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -19,7 +20,29 @@ export default function AdminTrendingPage() {
       const res = await fetch('/api/admin/products');
       const data = await res.json();
       if (data.success) {
-        setProducts(data.products || []);
+        const fetchedProducts = data.products || [];
+        setProducts(fetchedProducts);
+
+        // Retrieve previously saved custom selection order from localStorage or initialize with active items
+        const savedOrderStr = localStorage.getItem('attire_admin_trending_order');
+        let initialOrder = [];
+        if (savedOrderStr) {
+          try {
+            initialOrder = JSON.parse(savedOrderStr);
+          } catch {
+            initialOrder = [];
+          }
+        }
+
+        const currentlyFeaturedIds = fetchedProducts.filter((p) => p.isFeatured).map((p) => String(p._id));
+
+        // Keep existing ordered IDs that are still featured, then append any newly featured ones to the end
+        const validOrder = initialOrder.filter((id) => currentlyFeaturedIds.includes(String(id)));
+        const missingFeaturedIds = currentlyFeaturedIds.filter((id) => !validOrder.includes(String(id)));
+        const finalOrder = [...validOrder, ...missingFeaturedIds].slice(0, MAX_TRENDING_LIMIT);
+
+        setTrendingOrderIds(finalOrder);
+        localStorage.setItem('attire_admin_trending_order', JSON.stringify(finalOrder));
       }
     } catch (err) {
       console.error('Failed to load products:', err);
@@ -32,8 +55,14 @@ export default function AdminTrendingPage() {
     fetchProducts();
   }, []);
 
-  const trendingProducts = products.filter((p) => p.isFeatured);
-  const trendingCount = trendingProducts.length;
+  // Compute trending products strictly aligned with the custom selection order
+  const trendingProducts = useMemo(() => {
+    return trendingOrderIds
+      .map((id) => products.find((p) => String(p._id) === String(id)))
+      .filter(Boolean);
+  }, [trendingOrderIds, products]);
+
+  const trendingCount = trendingOrderIds.length;
 
   // Extract dynamic categories from existing catalog
   const availableCategories = useMemo(() => {
@@ -43,7 +72,7 @@ export default function AdminTrendingPage() {
   }, [products]);
 
   const handleToggleTrending = async (product) => {
-    const isCurrentlyFeatured = !!product.isFeatured;
+    const isCurrentlyFeatured = trendingOrderIds.includes(String(product._id));
     const newStatus = !isCurrentlyFeatured;
 
     // Enforce strict limit of 7 items
@@ -54,9 +83,17 @@ export default function AdminTrendingPage() {
 
     setUpdatingId(product._id);
 
-    // Optimistic UI Update
+    // Update order queue: if newly added -> append to the next available slot; if removed -> filter out
+    const updatedOrder = newStatus
+      ? [...trendingOrderIds, String(product._id)]
+      : trendingOrderIds.filter((id) => id !== String(product._id));
+
+    setTrendingOrderIds(updatedOrder);
+    localStorage.setItem('attire_admin_trending_order', JSON.stringify(updatedOrder));
+
+    // Optimistic UI Update on product list
     setProducts((prev) =>
-      prev.map((p) => (p._id === product._id ? { ...p, isFeatured: newStatus } : p))
+      prev.map((p) => (String(p._id) === String(product._id) ? { ...p, isFeatured: newStatus } : p))
     );
 
     try {
@@ -71,14 +108,28 @@ export default function AdminTrendingPage() {
       const data = await res.json();
       if (!data.success) {
         // Rollback
+        const rollbackOrder = isCurrentlyFeatured
+          ? [...trendingOrderIds]
+          : trendingOrderIds.filter((id) => id !== String(product._id));
+
+        setTrendingOrderIds(rollbackOrder);
+        localStorage.setItem('attire_admin_trending_order', JSON.stringify(rollbackOrder));
+
         setProducts((prev) =>
-          prev.map((p) => (p._id === product._id ? { ...p, isFeatured: isCurrentlyFeatured } : p))
+          prev.map((p) => (String(p._id) === String(product._id) ? { ...p, isFeatured: isCurrentlyFeatured } : p))
         );
         alert('Failed to update trending status');
       }
     } catch {
+      const rollbackOrder = isCurrentlyFeatured
+        ? [...trendingOrderIds]
+        : trendingOrderIds.filter((id) => id !== String(product._id));
+
+      setTrendingOrderIds(rollbackOrder);
+      localStorage.setItem('attire_admin_trending_order', JSON.stringify(rollbackOrder));
+
       setProducts((prev) =>
-        prev.map((p) => (p._id === product._id ? { ...p, isFeatured: isCurrentlyFeatured } : p))
+        prev.map((p) => (String(p._id) === String(product._id) ? { ...p, isFeatured: isCurrentlyFeatured } : p))
       );
       alert('Error communicating with server');
     } finally {
@@ -96,10 +147,10 @@ export default function AdminTrendingPage() {
       if (!matchesSearch) return false;
 
       if (selectedCategory === 'All') return true;
-      if (selectedCategory === '⭐ Trending') return !!p.isFeatured;
+      if (selectedCategory === '⭐ Trending') return trendingOrderIds.includes(String(p._id));
       return p.category?.toLowerCase() === selectedCategory.toLowerCase();
     });
-  }, [products, search, selectedCategory]);
+  }, [products, search, selectedCategory, trendingOrderIds]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-gray-900 min-h-screen">
@@ -113,7 +164,7 @@ export default function AdminTrendingPage() {
             </h1>
           </div>
           <p className="text-gray-500 text-xs sm:text-sm mt-1">
-            Configure the <strong>7 carousel items</strong> displayed prominently on your storefront homepage.
+            Configure the <strong>7 carousel items</strong> in your preferred chronological order.
           </p>
         </div>
 
@@ -134,7 +185,7 @@ export default function AdminTrendingPage() {
         </div>
       </div>
 
-      {/* 1. Dedicated Active Featured Queue Strip */}
+      {/* 1. Dedicated Active Featured Queue Strip (Strict Ordered Slots) */}
       <div className="mt-8 bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/50 p-5 rounded-3xl border border-indigo-100/80 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
@@ -191,7 +242,6 @@ export default function AdminTrendingPage() {
                       </div>
                     )}
 
-                    {/* Out of Stock Warning Pill on Featured Strip */}
                     {isOutOfStock && (
                       <div className="absolute inset-0 bg-red-900/60 backdrop-blur-[2px] flex items-center justify-center p-1 text-center">
                         <span className="text-[9px] font-black text-white uppercase tracking-wider bg-red-600 px-1.5 py-0.5 rounded">
@@ -262,7 +312,7 @@ export default function AdminTrendingPage() {
         </div>
       </div>
 
-      {/* 3. Products Selection Grid with Stock Health Indicators */}
+      {/* 3. Products Selection Grid */}
       {loading ? (
         <div className="py-20 text-center">
           <ClothesLoader text="Loading catalog..." />
@@ -275,7 +325,8 @@ export default function AdminTrendingPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-6">
           {filteredProducts.map((product) => {
-            const isFeatured = !!product.isFeatured;
+            const isFeatured = trendingOrderIds.includes(String(product._id));
+            const slotIndex = trendingOrderIds.indexOf(String(product._id));
             const isUpdating = updatingId === product._id;
 
             const stockNum = Number(product.stock) || 0;
@@ -301,15 +352,15 @@ export default function AdminTrendingPage() {
                     : 'border border-gray-200/90 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5'
                 }`}
               >
-                {/* Active Checkbox Indicator */}
+                {/* Active Checkbox Indicator showing exact slot number */}
                 <div
                   className={`absolute top-2 right-2 z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ${
                     isFeatured
-                      ? 'bg-indigo-600 text-white scale-100 shadow-md shadow-indigo-600/30 ring-2 ring-white'
+                      ? 'bg-indigo-600 text-white font-black text-[10px] scale-100 shadow-md shadow-indigo-600/30 ring-2 ring-white'
                       : 'bg-white/90 border border-gray-300 text-transparent opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100'
                   }`}
                 >
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  {isFeatured ? `#${slotIndex + 1}` : <Check className="w-3.5 h-3.5 stroke-[3]" />}
                 </div>
 
                 <div className="aspect-[4/5] bg-gray-100 rounded-xl overflow-hidden relative mb-2">
@@ -367,7 +418,6 @@ export default function AdminTrendingPage() {
                       )}
                     </div>
 
-                    {/* Stock Warning Badge */}
                     {isLowStock && (
                       <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
                         {stockNum} left
@@ -392,7 +442,7 @@ export default function AdminTrendingPage() {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                       </span>
-                      <span>Trending Active</span>
+                      <span>Slot #{slotIndex + 1} Active</span>
                     </>
                   ) : (
                     <span>+ Add to Trending</span>

@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
@@ -94,7 +93,7 @@ function NavbarContent() {
               />
             </div>
             <span className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">
-              HangOver<span className="text-orange-500 inline-block transition-transform duration-300 group-hover:scale-125">.</span>
+              HangOver.
             </span>
           </Link>
 

@@ -18,8 +18,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "ATTIRE | Modern Fashion Store",
-  description: "Shop the latest clothes and trending fashion.",
+  title: {
+    default: 'HangOver | Modern Fashion Store',
+    template: '%s | HangOver',
+  },
+  description: 'Shop modern streetwear, apparel, hoodies, and jackets tailored for everyday comfort.',
+  // ... other metadata
 };
 
 export default function RootLayout({ children }) {

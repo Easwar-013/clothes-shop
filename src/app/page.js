@@ -130,9 +130,8 @@ export default function HomePage() {
         }
       `}</style>
 
-      {/* 1. HangOver Streetwear Hero Banner Section with Inlaid Responsive Buttons */}
+      {/* 1. HangOver Streetwear Hero Banner Section */}
       <section className="relative w-full bg-black text-white overflow-hidden">
-        {/* Banner image wrapper with zero excess vertical height */}
         <div className="relative w-full">
           <img
             src="/hero-banner.png"
@@ -146,13 +145,10 @@ export default function HomePage() {
             }}
           />
 
-          {/* Bottom subtle shadow vignette */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
 
-          {/* Buttons positioned directly over the floor of the banner image */}
           <div className="absolute bottom-3 sm:bottom-6 md:bottom-10 left-0 right-0 z-10 px-4 sm:px-10">
             <div className="max-w-7xl mx-auto flex items-center justify-start gap-2.5 sm:gap-3.5">
-              {/* Shop Now Button with Orange Glow */}
               <Link
                 href="/catalog"
                 className="flex-1 sm:flex-initial text-center px-4 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-xs md:text-sm font-extrabold text-white bg-black/95 hover:bg-black rounded-lg sm:rounded-xl border border-orange-500/80 shadow-[0_0_15px_rgba(249,115,22,0.45)] transition-all duration-200 active:scale-95 hover:border-orange-400"
@@ -160,7 +156,6 @@ export default function HomePage() {
                 Shop Now
               </Link>
 
-              {/* View New Arrivals Button */}
               <Link
                 href="/new-arrivals"
                 className="flex-1 sm:flex-initial text-center px-4 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-xs md:text-sm font-extrabold text-gray-200 hover:text-white bg-black/70 hover:bg-black/90 backdrop-blur-md rounded-lg sm:rounded-xl border border-white/20 transition-all duration-200 active:scale-95 shadow-md"
@@ -207,42 +202,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. Category Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="flex justify-between items-end">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Shop by Category</h2>
-            <p className="text-gray-500 text-sm mt-1">Explore collections crafted for every occasion.</p>
-          </div>
-          <Link href="/catalog" className="text-indigo-600 font-bold text-sm hover:underline flex items-center space-x-1">
-            <span>All Categories</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-          {categories.map((cat) => (
-            <Link
-              key={cat.name}
-              href={`/catalog?category=${cat.name}`}
-              className="group relative h-48 sm:h-64 rounded-2xl overflow-hidden bg-gray-100 border border-gray-100 shadow-sm hover:shadow-md transition"
-            >
-              <img
-                src={cat.image}
-                alt={cat.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 text-white">
-                <h3 className="font-extrabold text-base sm:text-lg">{cat.name}</h3>
-                <p className="text-xs text-gray-300 font-medium">{cat.count}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* 4. Trending Section */}
+      {/* 3. Trending Section (Moved Above Category Grid) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex justify-between items-end">
           <div>
@@ -357,6 +317,41 @@ export default function HomePage() {
             })}
           </div>
         )}
+      </section>
+
+      {/* 4. Category Grid (Moved Below Trending Section) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="flex justify-between items-end">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Shop by Category</h2>
+            <p className="text-gray-500 text-sm mt-1">Explore collections crafted for every occasion.</p>
+          </div>
+          <Link href="/catalog" className="text-indigo-600 font-bold text-sm hover:underline flex items-center space-x-1">
+            <span>All Categories</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          {categories.map((cat) => (
+            <Link
+              key={cat.name}
+              href={`/catalog?category=${cat.name}`}
+              className="group relative h-48 sm:h-64 rounded-2xl overflow-hidden bg-gray-100 border border-gray-100 shadow-sm hover:shadow-md transition"
+            >
+              <img
+                src={cat.image}
+                alt={cat.name}
+                className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 text-white">
+                <h3 className="font-extrabold text-base sm:text-lg">{cat.name}</h3>
+                <p className="text-xs text-gray-300 font-medium">{cat.count}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
       </section>
     </div>
   );

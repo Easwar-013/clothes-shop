@@ -9,7 +9,6 @@ export default function Footer() {
   const { status } = useSession();
   const router = useRouter();
 
-  // Helper to safely navigate authenticated or unauthenticated users
   const handleProtectedNavigation = (e, targetPath) => {
     e.preventDefault();
     if (status === 'authenticated') {
@@ -27,7 +26,7 @@ export default function Footer() {
           {/* Brand Info */}
           <div className="space-y-4">
             <Link href="/" className="text-2xl font-black text-white tracking-tight">
-              HangOver<span className="text-orange-500">.</span>
+              HangOver.
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed max-w-sm">
               Modern apparel for everyday wear. Elevate your wardrobe with high-quality fashion designed for comfort and style.
@@ -65,7 +64,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Customer Support (With Smart Authentication Routing) */}
+          {/* Customer Support */}
           <div>
             <h3 className="text-xs font-bold text-white tracking-widest uppercase mb-4 text-indigo-400">Customer Support</h3>
             <ul className="space-y-2.5 text-sm font-medium">

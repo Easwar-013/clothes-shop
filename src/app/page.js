@@ -35,7 +35,6 @@ export default function HomePage() {
         if (data.success && data.products?.length > 0) {
           const rawProducts = data.products;
 
-          // 1. Read admin selection sequence from localStorage
           let savedOrder = [];
           try {
             const stored = localStorage.getItem(TRENDING_ORDER_STORAGE_KEY);
@@ -46,21 +45,18 @@ export default function HomePage() {
 
           const featuredProducts = rawProducts.filter((p) => p.isFeatured === true);
 
-          // 2. Sort featured products by the exact admin slot selection order
           let orderedFeatured = [];
           if (savedOrder.length > 0) {
             orderedFeatured = savedOrder
               .map((id) => featuredProducts.find((p) => p._id === id))
               .filter(Boolean);
 
-            // Add any newly featured products not yet in localStorage sequence
             const missing = featuredProducts.filter((p) => !savedOrder.includes(p._id));
             orderedFeatured = [...orderedFeatured, ...missing];
           } else {
             orderedFeatured = featuredProducts;
           }
 
-          // 3. Fallback to offers if no items marked featured
           const nonFeatured = rawProducts
             .filter((p) => !p.isFeatured)
             .sort((a, b) => Number(b.offer || 0) - Number(a.offer || 0));
@@ -78,10 +74,8 @@ export default function HomePage() {
     fetchProducts();
   }, []);
 
-  // Multiply products to ensure a seamless infinite scroll strip
   const displayProducts = products.length > 0 ? [...products, ...products, ...products, ...products] : [];
 
-  // Auto-Scroll Engine
   useEffect(() => {
     const container = scrollRef.current;
     if (loading || displayProducts.length === 0 || !container) return;
@@ -125,7 +119,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="space-y-16 pb-16 bg-white text-gray-900 overflow-x-hidden">
+    <div className="space-y-8 sm:space-y-16 pb-16 bg-white text-gray-900 overflow-x-hidden">
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;
@@ -136,51 +130,51 @@ export default function HomePage() {
         }
       `}</style>
 
-      {/* 1. Hero Section */}
-      <section className="relative bg-gray-900 text-white overflow-hidden py-24 lg:py-32">
-        <div className="absolute inset-0 z-0 opacity-40">
+      {/* 1. HangOver Streetwear Hero Banner Section with Inlaid Responsive Buttons */}
+      <section className="relative w-full bg-black text-white overflow-hidden">
+        {/* Banner image wrapper with zero excess vertical height */}
+        <div className="relative w-full">
           <img
-            src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1600&auto=format&fit=crop"
-            alt="Hero Fashion Background"
-            className="w-full h-full object-cover"
+            src="/hero-banner.png"
+            alt="HangOver Streetwear Collection"
+            className="w-full h-auto block object-cover object-center"
+            onError={(e) => {
+              if (!e.currentTarget.dataset.retried) {
+                e.currentTarget.dataset.retried = 'true';
+                e.currentTarget.src = '/hero-banner.jpg';
+              }
+            }}
           />
-        </div>
-        
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-start space-y-6">
-          <div className="inline-flex items-center space-x-2 bg-indigo-600/80 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>New Season Collection</span>
-          </div>
 
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-none max-w-2xl">
-            Redefine Your <span className="text-indigo-400">Everyday Style.</span>
-          </h1>
+          {/* Bottom subtle shadow vignette */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
 
-          <p className="text-gray-300 text-base sm:text-lg max-w-xl leading-relaxed">
-            Discover curated, premium apparel designed for modern comfort and timeless aesthetics. Explore our latest arrivals today.
-          </p>
+          {/* Buttons positioned directly over the floor of the banner image */}
+          <div className="absolute bottom-3 sm:bottom-6 md:bottom-10 left-0 right-0 z-10 px-4 sm:px-10">
+            <div className="max-w-7xl mx-auto flex items-center justify-start gap-2.5 sm:gap-3.5">
+              {/* Shop Now Button with Orange Glow */}
+              <Link
+                href="/catalog"
+                className="flex-1 sm:flex-initial text-center px-4 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-xs md:text-sm font-extrabold text-white bg-black/95 hover:bg-black rounded-lg sm:rounded-xl border border-orange-500/80 shadow-[0_0_15px_rgba(249,115,22,0.45)] transition-all duration-200 active:scale-95 hover:border-orange-400"
+              >
+                Shop Now
+              </Link>
 
-          <div className="flex flex-wrap gap-4 pt-2">
-            <Link
-              href="/catalog"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-xl transition flex items-center space-x-2 shadow-lg shadow-indigo-600/30 text-sm"
-            >
-              <span>Explore Shop</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/new-arrivals"
-              className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold px-6 py-3.5 rounded-xl border border-white/20 transition text-sm"
-            >
-              View New Arrivals
-            </Link>
+              {/* View New Arrivals Button */}
+              <Link
+                href="/new-arrivals"
+                className="flex-1 sm:flex-initial text-center px-4 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-xs md:text-sm font-extrabold text-gray-200 hover:text-white bg-black/70 hover:bg-black/90 backdrop-blur-md rounded-lg sm:rounded-xl border border-white/20 transition-all duration-200 active:scale-95 shadow-md"
+              >
+                View New Arrivals
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* 2. Brand Perks */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50/70 p-8 rounded-2xl border border-gray-100">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50/70 p-6 sm:p-8 rounded-2xl border border-gray-100">
           <div className="flex items-center space-x-4">
             <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
               <Truck className="w-6 h-6" />
@@ -226,12 +220,12 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           {categories.map((cat) => (
             <Link
               key={cat.name}
               href={`/catalog?category=${cat.name}`}
-              className="group relative h-64 rounded-2xl overflow-hidden bg-gray-100 border border-gray-100 shadow-sm hover:shadow-md transition"
+              className="group relative h-48 sm:h-64 rounded-2xl overflow-hidden bg-gray-100 border border-gray-100 shadow-sm hover:shadow-md transition"
             >
               <img
                 src={cat.image}
@@ -240,7 +234,7 @@ export default function HomePage() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4 text-white">
-                <h3 className="font-extrabold text-lg">{cat.name}</h3>
+                <h3 className="font-extrabold text-base sm:text-lg">{cat.name}</h3>
                 <p className="text-xs text-gray-300 font-medium">{cat.count}</p>
               </div>
             </Link>
@@ -279,7 +273,7 @@ export default function HomePage() {
             onMouseLeave={() => setIsPaused(false)}
             onTouchStart={() => setIsPaused(true)}
             onTouchEnd={() => setIsPaused(false)}
-            className="flex space-x-6 overflow-x-auto py-2 px-1 no-scrollbar cursor-grab active:cursor-grabbing"
+            className="flex space-x-4 sm:space-x-6 overflow-x-auto py-2 px-1 no-scrollbar cursor-grab active:cursor-grabbing"
           >
             {displayProducts.map((product, idx) => {
               const originalPrice = Number(product.price) || 0;
@@ -293,7 +287,7 @@ export default function HomePage() {
               return (
                 <div
                   key={`${product._id}-${idx}`}
-                  className="w-[280px] shrink-0 group bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                  className="w-[240px] sm:w-[280px] shrink-0 group bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
                 >
                   <Link href={`/product/${product._id}`} className="block relative">
                     <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">
@@ -323,19 +317,19 @@ export default function HomePage() {
                     </div>
                   </Link>
 
-                  <div className="p-4 flex flex-col flex-1 justify-between">
+                  <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between">
                     <div>
                       <Link href={`/product/${product._id}`}>
-                        <h3 className="font-bold text-gray-900 text-base line-clamp-1 hover:text-indigo-600 transition">
+                        <h3 className="font-bold text-gray-900 text-sm sm:text-base line-clamp-1 hover:text-indigo-600 transition">
                           {product.title}
                         </h3>
                       </Link>
                       <p className="text-gray-500 text-xs mt-1 line-clamp-1">{product.description || 'No description provided.'}</p>
                     </div>
 
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between mt-3 sm:mt-4 pt-3 border-t border-gray-100">
                       <div className="flex items-baseline space-x-1.5">
-                        <span className="text-lg font-black text-gray-900">
+                        <span className="text-base sm:text-lg font-black text-gray-900">
                           ₹{finalPrice.toLocaleString('en-IN')}
                         </span>
                         {hasOffer && (
@@ -347,7 +341,7 @@ export default function HomePage() {
 
                       <button
                         onClick={(e) => handleQuickAdd(product, finalPrice, e)}
-                        className={`p-2.5 rounded-xl transition flex items-center justify-center ${
+                        className={`p-2 sm:p-2.5 rounded-xl transition flex items-center justify-center ${
                           addedId === product._id
                             ? 'bg-green-600 text-white'
                             : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'

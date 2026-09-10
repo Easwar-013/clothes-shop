@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
@@ -37,12 +38,10 @@ function NavbarContent() {
 
   const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
-  // Close mobile drawer on route/category change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname, searchParams]);
 
-  // Helper to check if a navigation link is currently active
   const isActive = (path, category = null) => {
     if (category) {
       return pathname === '/catalog' && currentCategory?.toLowerCase() === category.toLowerCase();
@@ -76,7 +75,7 @@ function NavbarContent() {
     <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
-        {/* Brand Logo, Mobile Menu Button & Context Badge */}
+        {/* Brand Logo & Context Badge */}
         <div className="flex items-center space-x-2 sm:space-x-3">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -86,9 +85,19 @@ function NavbarContent() {
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          <Link href={isAdminPage ? '/admin/products' : '/'} className="text-2xl font-black tracking-tight text-gray-900 group hover:opacity-90 transition-opacity duration-200">
-            ATTIRE<span className="text-indigo-600 inline-block transition-transform duration-300 group-hover:scale-125">.</span>
+          <Link href={isAdminPage ? '/admin/products' : '/'} className="flex items-center space-x-2 group">
+            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm shrink-0">
+              <img
+                src="/hangover.jpeg"
+                alt="HangOver Logo"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <span className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">
+              HangOver<span className="text-orange-500 inline-block transition-transform duration-300 group-hover:scale-125">.</span>
+            </span>
           </Link>
+
           {isAdminPage && (
             <span className="bg-indigo-100 text-indigo-700 text-[10px] font-extrabold uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md tracking-wider border border-indigo-200 shadow-sm transition-all duration-300">
               Admin Panel
@@ -188,7 +197,6 @@ function NavbarContent() {
                 )}
               </button>
 
-              {/* Profile Dropdown */}
               <div
                 onMouseLeave={() => setDropdownOpen(false)}
                 className={`absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 text-sm z-50 transition-all duration-200 ease-out origin-top-right ${

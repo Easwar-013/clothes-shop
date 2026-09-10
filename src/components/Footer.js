@@ -27,7 +27,7 @@ export default function Footer() {
           {/* Brand Info */}
           <div className="space-y-4">
             <Link href="/" className="text-2xl font-black text-white tracking-tight">
-              ATTIRE<span className="text-indigo-500">.</span>
+              HangOver<span className="text-orange-500">.</span>
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed max-w-sm">
               Modern apparel for everyday wear. Elevate your wardrobe with high-quality fashion designed for comfort and style.
@@ -105,7 +105,7 @@ export default function Footer() {
 
         {/* Footer Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-4">
-          <p>© {new Date().getFullYear()} ATTIRE Clothing Store. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} HangOver Clothing Store. All rights reserved.</p>
           <div className="flex space-x-6">
             <Link href="/catalog" className="hover:text-gray-300 transition">Terms</Link>
             <Link href="/catalog" className="hover:text-gray-300 transition">Privacy</Link>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ShoppingBag, Truck, RefreshCw, ShieldCheck, Sparkles, Check } from 'lucide-react';
+import { ArrowRight, ShoppingBag, Sparkles, Check } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import ClothesLoader from '@/components/ClothesLoader';
 
@@ -119,7 +119,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="space-y-8 sm:space-y-16 pb-16 bg-white text-gray-900 overflow-x-hidden">
+    <div className="space-y-10 sm:space-y-16 pb-16 bg-white text-gray-900 overflow-x-hidden">
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;
@@ -130,13 +130,14 @@ export default function HomePage() {
         }
       `}</style>
 
-      {/* 1. HangOver Streetwear Hero Banner Section */}
+      {/* 1. Immersive HangOver Hero Banner Section */}
       <section className="relative w-full bg-black text-white overflow-hidden">
-        <div className="relative w-full">
+        {/* Height configuration: expanded on mobile to avoid small cramped view */}
+        <div className="relative w-full min-h-[52vh] sm:min-h-[60vh] md:aspect-[2.4/1] flex items-end">
           <img
             src="/hero-banner.png"
             alt="HangOver Streetwear Collection"
-            className="w-full h-auto block object-cover object-center"
+            className="absolute inset-0 w-full h-full object-cover object-center"
             onError={(e) => {
               if (!e.currentTarget.dataset.retried) {
                 e.currentTarget.dataset.retried = 'true';
@@ -145,20 +146,22 @@ export default function HomePage() {
             }}
           />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+          {/* Bottom vignette for text/button readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none" />
 
-          <div className="absolute bottom-3 sm:bottom-6 md:bottom-10 left-0 right-0 z-10 px-4 sm:px-10">
-            <div className="max-w-7xl mx-auto flex items-center justify-start gap-2.5 sm:gap-3.5">
+          {/* Action Buttons overlay */}
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-10 pb-6 sm:pb-10">
+            <div className="flex items-center justify-start gap-3 max-w-md sm:max-w-none">
               <Link
                 href="/catalog"
-                className="flex-1 sm:flex-initial text-center px-4 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-xs md:text-sm font-extrabold text-white bg-black/95 hover:bg-black rounded-lg sm:rounded-xl border border-orange-500/80 shadow-[0_0_15px_rgba(249,115,22,0.45)] transition-all duration-200 active:scale-95 hover:border-orange-400"
+                className="flex-1 sm:flex-initial text-center px-6 py-3 text-xs sm:text-sm font-black uppercase tracking-wider text-white bg-black/95 hover:bg-black rounded-xl border border-orange-500/80 shadow-[0_0_20px_rgba(249,115,22,0.45)] transition-all duration-200 active:scale-95 hover:border-orange-400"
               >
                 Shop Now
               </Link>
 
               <Link
                 href="/new-arrivals"
-                className="flex-1 sm:flex-initial text-center px-4 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-xs md:text-sm font-extrabold text-gray-200 hover:text-white bg-black/70 hover:bg-black/90 backdrop-blur-md rounded-lg sm:rounded-xl border border-white/20 transition-all duration-200 active:scale-95 shadow-md"
+                className="flex-1 sm:flex-initial text-center px-6 py-3 text-xs sm:text-sm font-bold tracking-wide text-gray-200 hover:text-white bg-black/75 hover:bg-black/95 backdrop-blur-md rounded-xl border border-white/20 transition-all duration-200 active:scale-95 shadow-md"
               >
                 View New Arrivals
               </Link>
@@ -167,43 +170,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. Brand Perks */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50/70 p-6 sm:p-8 rounded-2xl border border-gray-100">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
-              <Truck className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900 text-sm">Free Express Shipping</h3>
-              <p className="text-xs text-gray-500 mt-0.5">On all orders over ₹999</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
-              <RefreshCw className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900 text-sm">Hassle-Free Returns</h3>
-              <p className="text-xs text-gray-500 mt-0.5">30-day money back guarantee</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900 text-sm">100% Guaranteed Quality</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Sourced from top manufacturers</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Trending Section (Moved Above Category Grid) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      {/* 2. Trending Section (Positioned directly under Hero) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
         <div className="flex justify-between items-end">
           <div>
             <div className="inline-flex items-center space-x-1.5 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
@@ -211,10 +179,10 @@ export default function HomePage() {
               <span>Handpicked Collection</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Trending Now</h2>
-            <p className="text-gray-500 text-sm mt-1">Discover what our community is loving right now.</p>
+            <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Discover what our community is loving right now.</p>
           </div>
 
-          <Link href="/catalog" className="text-indigo-600 font-bold text-sm hover:underline flex items-center space-x-1">
+          <Link href="/catalog" className="text-indigo-600 font-bold text-xs sm:text-sm hover:underline flex items-center space-x-1 shrink-0">
             <span>View Full Catalog</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
@@ -319,14 +287,14 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* 4. Category Grid (Moved Below Trending Section) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      {/* 3. Category Grid */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
         <div className="flex justify-between items-end">
           <div>
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Shop by Category</h2>
-            <p className="text-gray-500 text-sm mt-1">Explore collections crafted for every occasion.</p>
+            <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Explore collections crafted for every occasion.</p>
           </div>
-          <Link href="/catalog" className="text-indigo-600 font-bold text-sm hover:underline flex items-center space-x-1">
+          <Link href="/catalog" className="text-indigo-600 font-bold text-xs sm:text-sm hover:underline flex items-center space-x-1 shrink-0">
             <span>All Categories</span>
             <ArrowRight className="w-4 h-4" />
           </Link>

@@ -30,7 +30,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Check role via session endpoint to handle redirection
       const sessionRes = await fetch('/api/auth/session');
       const sessionData = await sessionRes.json();
 
@@ -52,7 +51,7 @@ export default function LoginPage() {
       <div className="max-w-md w-full bg-white p-8 rounded-3xl border border-gray-200 shadow-sm text-gray-900">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-black">Welcome Back</h1>
-          <p className="text-gray-500 text-xs mt-1">Sign in to your ATTIRE account</p>
+          <p className="text-gray-500 text-xs mt-1">Sign in to your HangOver account</p>
         </div>
 
         {error && (
@@ -72,7 +71,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500"
             />
           </div>
 
@@ -86,14 +85,14 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md disabled:opacity-50"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition text-sm shadow-md disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
@@ -106,7 +105,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Google Sign In Button with Official Google Logo */}
+        {/* Google Sign In Button */}
         <button
           onClick={() => signIn('google', { callbackUrl: '/catalog' })}
           className="w-full bg-white hover:bg-gray-50 border border-gray-300 font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center space-x-2 text-gray-700 shadow-sm"
@@ -134,7 +133,7 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-xs text-gray-500">
           Don't have an account?{' '}
-          <Link href="/register" className="text-indigo-600 font-bold hover:underline">
+          <Link href="/register" className="text-orange-500 font-bold hover:underline">
             Register here
           </Link>
         </p>

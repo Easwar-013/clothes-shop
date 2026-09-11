@@ -11,7 +11,6 @@ export default function WishlistPage() {
   const { addToCart } = useCart();
   const [addedId, setAddedId] = useState(null);
 
-  // Automatically mark wishlist as read when the user views this page
   useEffect(() => {
     markAsRead();
   }, [markAsRead]);
@@ -30,7 +29,7 @@ export default function WishlistPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white text-gray-900 min-h-screen">
       <Link
         href="/catalog"
-        className="inline-flex items-center text-xs font-bold text-gray-500 hover:text-indigo-600 mb-6 transition"
+        className="inline-flex items-center text-xs font-bold text-gray-500 hover:text-orange-500 mb-6 transition"
       >
         <ArrowLeft className="w-4 h-4 mr-1" /> Back to Catalog
       </Link>
@@ -56,7 +55,7 @@ export default function WishlistPage() {
           </p>
           <Link
             href="/catalog"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl transition text-sm shadow-md"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl transition text-sm shadow-md shadow-orange-500/20"
           >
             Browse Products
           </Link>
@@ -103,7 +102,7 @@ export default function WishlistPage() {
                 <div className="p-4 flex flex-col flex-1 justify-between">
                   <div>
                     <Link href={`/product/${product._id}`}>
-                      <h3 className="font-bold text-gray-900 text-base line-clamp-1 hover:text-indigo-600 transition">
+                      <h3 className="font-bold text-gray-900 text-base line-clamp-1 hover:text-orange-500 transition">
                         {product.title}
                       </h3>
                     </Link>
@@ -126,8 +125,8 @@ export default function WishlistPage() {
                       onClick={(e) => handleQuickAdd(product, finalPrice, e)}
                       className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1 ${
                         addedId === product._id
-                          ? 'bg-green-600 text-white'
-                          : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-500/20'
                       }`}
                     >
                       <ShoppingBag className="w-3.5 h-3.5" />

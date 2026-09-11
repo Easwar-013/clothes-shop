@@ -132,7 +132,6 @@ export default function HomePage() {
 
       {/* 1. Immersive HangOver Hero Banner Section */}
       <section className="relative w-full bg-black text-white overflow-hidden">
-        {/* Height configuration: expanded on mobile to avoid small cramped view */}
         <div className="relative w-full min-h-[52vh] sm:min-h-[60vh] md:aspect-[2.4/1] flex items-end">
           <img
             src="/hero-banner.png"
@@ -170,11 +169,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. Trending Section (Positioned directly under Hero) */}
+      {/* 2. Trending Section (Above Category Grid) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
         <div className="flex justify-between items-end">
           <div>
-            <div className="inline-flex items-center space-x-1.5 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+            <div className="inline-flex items-center space-x-1.5 text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Handpicked Collection</span>
             </div>
@@ -182,7 +181,7 @@ export default function HomePage() {
             <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Discover what our community is loving right now.</p>
           </div>
 
-          <Link href="/catalog" className="text-indigo-600 font-bold text-xs sm:text-sm hover:underline flex items-center space-x-1 shrink-0">
+          <Link href="/catalog" className="text-orange-500 font-bold text-xs sm:text-sm hover:underline flex items-center space-x-1 shrink-0">
             <span>View Full Catalog</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
@@ -248,7 +247,7 @@ export default function HomePage() {
                   <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between">
                     <div>
                       <Link href={`/product/${product._id}`}>
-                        <h3 className="font-bold text-gray-900 text-sm sm:text-base line-clamp-1 hover:text-indigo-600 transition">
+                        <h3 className="font-bold text-gray-900 text-sm sm:text-base line-clamp-1 hover:text-orange-500 transition">
                           {product.title}
                         </h3>
                       </Link>
@@ -272,7 +271,7 @@ export default function HomePage() {
                         className={`p-2 sm:p-2.5 rounded-xl transition flex items-center justify-center ${
                           addedId === product._id
                             ? 'bg-green-600 text-white'
-                            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
+                            : 'bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white'
                         }`}
                         aria-label="Quick Add to Cart"
                       >
@@ -294,7 +293,7 @@ export default function HomePage() {
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Shop by Category</h2>
             <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Explore collections crafted for every occasion.</p>
           </div>
-          <Link href="/catalog" className="text-indigo-600 font-bold text-xs sm:text-sm hover:underline flex items-center space-x-1 shrink-0">
+          <Link href="/catalog" className="text-orange-500 font-bold text-xs sm:text-sm hover:underline flex items-center space-x-1 shrink-0">
             <span>All Categories</span>
             <ArrowRight className="w-4 h-4" />
           </Link>

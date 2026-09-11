@@ -6,11 +6,11 @@ export default function ClothesLoader({ text = 'Loading collection...' }) {
       {/* Animated Shirt SVG */}
       <div className="relative w-16 h-16 flex items-center justify-center">
         {/* Pulsing Outer Ring */}
-        <div className="absolute inset-0 rounded-full border-2 border-indigo-200 animate-ping opacity-75" />
+        <div className="absolute inset-0 rounded-full border-2 border-orange-200 animate-ping opacity-75" />
         
         {/* Animated Shirt Icon */}
         <svg
-          className="w-12 h-12 text-indigo-600 animate-bounce duration-700"
+          className="w-12 h-12 text-orange-500 animate-bounce duration-700"
           viewBox="0 0 24 24"
           fill="currentColor"
           xmlns="http://www.w3.org/2000/svg"

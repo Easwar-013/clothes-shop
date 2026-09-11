@@ -26,20 +26,20 @@ export default function Footer() {
           {/* Brand Info */}
           <div className="space-y-4">
             <Link href="/" className="text-2xl font-black text-white tracking-tight">
-              HangOver.
+              HangOver
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed max-w-sm">
               Modern apparel for everyday wear. Elevate your wardrobe with high-quality fashion designed for comfort and style.
             </p>
-            <div className="flex items-center space-x-2 text-xs font-bold text-indigo-400">
-              <ShieldCheck className="w-4 h-4 text-indigo-500" />
+            <div className="flex items-center space-x-2 text-xs font-bold text-orange-500">
+              <ShieldCheck className="w-4 h-4 text-orange-500" />
               <span>100% Authentic Apparel</span>
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-xs font-bold text-white tracking-widest uppercase mb-4 text-indigo-400">Shop</h3>
+            <h3 className="text-xs font-bold text-white tracking-widest uppercase mb-4 text-orange-500">Shop</h3>
             <ul className="space-y-2.5 text-sm font-medium">
               <li>
                 <Link href="/catalog" className="hover:text-white transition-colors duration-150">
@@ -66,7 +66,7 @@ export default function Footer() {
 
           {/* Customer Support */}
           <div>
-            <h3 className="text-xs font-bold text-white tracking-widest uppercase mb-4 text-indigo-400">Customer Support</h3>
+            <h3 className="text-xs font-bold text-white tracking-widest uppercase mb-4 text-orange-500">Customer Support</h3>
             <ul className="space-y-2.5 text-sm font-medium">
               <li>
                 <a

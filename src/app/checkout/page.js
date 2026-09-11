@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { ShoppingBag, ArrowLeft, CheckCircle2, Package, Tag, X, ShieldCheck, Truck, Loader2, Globe } from 'lucide-react';
 import ClothesLoader from '@/components/ClothesLoader';
 
-// Utility helper to dynamically load the Razorpay SDK script
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
     if (typeof window !== 'undefined' && window.Razorpay) {
@@ -47,10 +46,8 @@ export default function CheckoutPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [fetchingPincode, setFetchingPincode] = useState(false);
 
-  // Payment Method Selection State: 'ONLINE' or 'COD'
   const [paymentMethod, setPaymentMethod] = useState('ONLINE');
 
-  // Form State
   const [formData, setFormData] = useState({
     phone: '',
     street: '',
@@ -61,32 +58,27 @@ export default function CheckoutPage() {
     countryCode: 'IN',
   });
 
-  // Coupon State
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
 
-  // Totals Calculation (Free Shipping)
   const subtotal = cart.reduce((total, item) => total + (item.price || 0) * (item.quantity || 1), 0);
   const shipping = 0;
   const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
   const grandTotal = Math.max(0, subtotal - discountAmount + shipping);
 
-  // Protect route
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login?callbackUrl=/checkout');
     }
   }, [status, router]);
 
-  // Global Multi-Country Postal/ZIP Code Auto Lookup
   const fetchGlobalPostalData = async (zip, countryCode) => {
     if (!zip || zip.length < 3) return;
 
     setFetchingPincode(true);
     try {
-      // 1. If India (IN) -> Use India Post API
       if (countryCode === 'IN') {
         const cleanZip = zip.replace(/\D/g, '').slice(0, 6);
         if (cleanZip.length === 6) {
@@ -103,7 +95,6 @@ export default function CheckoutPage() {
           }
         }
       } else {
-        // 2. Global Lookups (US, UK, CA, DE, FR, AU, etc.) via Zippopotam
         const cleanZip = zip.trim();
         const res = await fetch(`https://api.zippopotam.us/${countryCode.toLowerCase()}/${encodeURIComponent(cleanZip)}`);
         if (res.ok) {
@@ -130,7 +121,6 @@ export default function CheckoutPage() {
     const rawVal = e.target.value;
     setFormData((prev) => ({ ...prev, zipCode: rawVal }));
 
-    // Trigger lookup when input matches typical postal formats
     if (formData.countryCode === 'IN' && rawVal.replace(/\D/g, '').length === 6) {
       fetchGlobalPostalData(rawVal, 'IN');
     } else if (formData.countryCode !== 'IN' && rawVal.trim().length >= 4) {
@@ -196,7 +186,6 @@ export default function CheckoutPage() {
     setCouponError(null);
   };
 
-  // Main Submit Handler (Handles both Razorpay and COD)
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -230,7 +219,6 @@ export default function CheckoutPage() {
       paymentStatus: paymentMethod === 'COD' ? 'Pending' : 'Paid',
     };
 
-    // --- CASH ON DELIVERY FLOW ---
     if (paymentMethod === 'COD') {
       try {
         const res = await fetch('/api/orders', {
@@ -255,7 +243,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // --- ONLINE PAYMENT (RAZORPAY) FLOW ---
     try {
       const isRazorpayLoaded = await loadRazorpayScript();
       if (!isRazorpayLoaded) {
@@ -281,7 +268,7 @@ export default function CheckoutPage() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: orderInitData.amount,
         currency: orderInitData.currency,
-        name: 'ATTIRE',
+        name: 'HangOver',
         description: 'Order Payment',
         order_id: orderInitData.orderId,
         handler: async function (response) {
@@ -318,7 +305,7 @@ export default function CheckoutPage() {
           contact: formData.phone,
         },
         theme: {
-          color: '#4f46e5',
+          color: '#f97316',
         },
         modal: {
           ondismiss: function () {
@@ -347,7 +334,7 @@ export default function CheckoutPage() {
   if (isSuccess) {
     return (
       <div className="max-w-2xl mx-auto my-16 p-8 bg-white rounded-3xl border border-gray-200 shadow-sm text-center text-gray-900">
-        <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4 animate-bounce" />
+        <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4 animate-bounce" />
         <h1 className="text-3xl font-black mb-2">Order Confirmed!</h1>
         <p className="text-gray-600 text-sm mb-6">
           Thank you for your purchase. We have received your order and are preparing your package for shipment.
@@ -355,7 +342,7 @@ export default function CheckoutPage() {
         <div className="flex flex-wrap justify-center gap-4">
           <Link
             href="/account"
-            className="inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl transition text-sm shadow-md"
+            className="inline-flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl transition text-sm shadow-md"
           >
             <Package className="w-4 h-4" />
             <span>View My Orders</span>
@@ -379,7 +366,7 @@ export default function CheckoutPage() {
         <p className="text-gray-500 text-sm mb-6">Add items to your cart before proceeding to checkout.</p>
         <Link
           href="/catalog"
-          className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl transition text-sm"
+          className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl transition text-sm"
         >
           Explore Catalog
         </Link>
@@ -391,7 +378,7 @@ export default function CheckoutPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white text-gray-900 min-h-screen">
       <Link
         href="/catalog"
-        className="inline-flex items-center text-xs font-bold text-gray-500 hover:text-indigo-600 mb-6 transition"
+        className="inline-flex items-center text-xs font-bold text-gray-500 hover:text-orange-500 mb-6 transition"
       >
         <ArrowLeft className="w-4 h-4 mr-1" /> Back to Catalog
       </Link>
@@ -414,7 +401,7 @@ export default function CheckoutPage() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+91 98765 43210"
-                    className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
+                    className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500"
                   />
                 </div>
 
@@ -426,20 +413,19 @@ export default function CheckoutPage() {
                     value={formData.street}
                     onChange={(e) => setFormData({ ...formData, street: e.target.value })}
                     placeholder="123 Main St, Flat / Door No."
-                    className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
+                    className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500"
                   />
                 </div>
 
-                {/* Country & Global ZIP Code Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold uppercase text-gray-700 mb-1 flex items-center gap-1">
-                      <Globe className="w-3.5 h-3.5 text-indigo-600" /> Country
+                      <Globe className="w-3.5 h-3.5 text-orange-500" /> Country
                     </label>
                     <select
                       value={formData.country}
                       onChange={handleCountryChange}
-                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600 cursor-pointer"
+                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500 cursor-pointer"
                     >
                       {COMMON_COUNTRIES.map((c) => (
                         <option key={c.code} value={c.name}>
@@ -453,7 +439,7 @@ export default function CheckoutPage() {
                     <label className="block text-xs font-bold uppercase text-gray-700 mb-1 flex items-center justify-between">
                       <span>ZIP / Postal Code</span>
                       {fetchingPincode && (
-                        <span className="text-[10px] text-indigo-600 font-semibold flex items-center gap-1">
+                        <span className="text-[10px] text-orange-500 font-semibold flex items-center gap-1">
                           <Loader2 className="w-3 h-3 animate-spin" /> Auto-detecting...
                         </span>
                       )}
@@ -464,12 +450,11 @@ export default function CheckoutPage() {
                       value={formData.zipCode}
                       onChange={handlePincodeChange}
                       placeholder={formData.countryCode === 'IN' ? 'e.g. 611001' : 'e.g. 90210'}
-                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
+                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500"
                     />
                   </div>
                 </div>
 
-                {/* Auto-filled Editable City & State Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold uppercase text-gray-700 mb-1">City / District</label>
@@ -479,7 +464,7 @@ export default function CheckoutPage() {
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                       placeholder="e.g. Nagapattinam"
-                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
+                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500"
                     />
                   </div>
 
@@ -491,7 +476,7 @@ export default function CheckoutPage() {
                       value={formData.state}
                       onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                       placeholder="e.g. Tamil Nadu"
-                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
+                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500"
                     />
                   </div>
                 </div>
@@ -503,12 +488,11 @@ export default function CheckoutPage() {
               <h2 className="text-lg font-bold">Select Payment Method</h2>
 
               <div className="space-y-3">
-                {/* Option 1: Online Payment (Razorpay) */}
                 <label
                   onClick={() => setPaymentMethod('ONLINE')}
                   className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition ${
                     paymentMethod === 'ONLINE'
-                      ? 'bg-white border-indigo-600 shadow-sm ring-2 ring-indigo-600/20'
+                      ? 'bg-white border-orange-500 shadow-sm ring-2 ring-orange-500/20'
                       : 'bg-white border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -518,24 +502,23 @@ export default function CheckoutPage() {
                       name="paymentOption"
                       checked={paymentMethod === 'ONLINE'}
                       onChange={() => setPaymentMethod('ONLINE')}
-                      className="accent-indigo-600 w-4 h-4"
+                      className="accent-orange-500 w-4 h-4"
                     />
                     <div>
                       <p className="text-sm font-bold text-gray-900">Online Payment</p>
                       <p className="text-xs text-gray-500">UPI, Credit/Debit Cards, NetBanking, Wallets</p>
                     </div>
                   </div>
-                  <span className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md font-bold flex items-center gap-1">
+                  <span className="text-xs bg-orange-50 text-orange-600 px-2.5 py-1 rounded-md font-bold flex items-center gap-1 border border-orange-100">
                     <ShieldCheck className="w-3.5 h-3.5" /> Razorpay
                   </span>
                 </label>
 
-                {/* Option 2: Cash on Delivery (COD) */}
                 <label
                   onClick={() => setPaymentMethod('COD')}
                   className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition ${
                     paymentMethod === 'COD'
-                      ? 'bg-white border-indigo-600 shadow-sm ring-2 ring-indigo-600/20'
+                      ? 'bg-white border-orange-500 shadow-sm ring-2 ring-orange-500/20'
                       : 'bg-white border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -545,7 +528,7 @@ export default function CheckoutPage() {
                       name="paymentOption"
                       checked={paymentMethod === 'COD'}
                       onChange={() => setPaymentMethod('COD')}
-                      className="accent-indigo-600 w-4 h-4"
+                      className="accent-orange-500 w-4 h-4"
                     />
                     <div>
                       <p className="text-sm font-bold text-gray-900">Cash on Delivery (COD)</p>
@@ -566,7 +549,6 @@ export default function CheckoutPage() {
           <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 sticky top-24 space-y-6">
             <h2 className="text-lg font-bold border-b border-gray-200 pb-3">Order Summary</h2>
 
-            {/* Cart Items List */}
             <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
               {cart.map((item, idx) => {
                 const itemImg = getItemImage(item);
@@ -597,7 +579,7 @@ export default function CheckoutPage() {
             {/* Promo Code Section */}
             <div className="border-t border-gray-200 pt-4 space-y-3">
               <label className="block text-xs font-bold uppercase text-gray-700 flex items-center gap-1">
-                <Tag className="w-3.5 h-3.5 text-indigo-600" /> Have a Promo Code?
+                <Tag className="w-3.5 h-3.5 text-orange-500" /> Have a Promo Code?
               </label>
 
               {appliedCoupon ? (
@@ -625,13 +607,13 @@ export default function CheckoutPage() {
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                     placeholder="Enter Coupon Code"
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs font-bold uppercase focus:outline-none focus:border-indigo-600"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs font-bold uppercase focus:outline-none focus:border-orange-500"
                   />
                   <button
                     type="button"
                     onClick={handleApplyCoupon}
                     disabled={validatingCoupon || !couponInput.trim()}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition disabled:opacity-50 shrink-0"
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition disabled:opacity-50 shrink-0"
                   >
                     {validatingCoupon ? 'Validating...' : 'Apply'}
                   </button>
@@ -666,16 +648,15 @@ export default function CheckoutPage() {
 
               <div className="flex justify-between text-base font-black text-gray-900 border-t border-gray-200 pt-3">
                 <span>Total Due</span>
-                <span className="text-xl text-indigo-600">₹{grandTotal.toLocaleString('en-IN')}</span>
+                <span className="text-xl text-orange-500">₹{grandTotal.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
-            {/* Dynamic Button Based on Selected Payment Method */}
             <button
               type="submit"
               form="checkout-form"
               disabled={isSubmitting}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition text-sm shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition text-sm shadow-lg shadow-orange-500/20 disabled:opacity-50"
             >
               {isSubmitting
                 ? 'Processing...'

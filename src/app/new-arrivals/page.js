@@ -8,7 +8,7 @@ import { Sparkles, ShoppingBag, Check, Heart, ChevronLeft, ChevronRight } from '
 import ClothesLoader from '@/components/ClothesLoader';
 
 const ITEMS_PER_PAGE = 12;
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 function NewArrivalsContent() {
   const { addToCart } = useCart();
@@ -70,22 +70,22 @@ function NewArrivalsContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white text-gray-900 min-h-screen">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-3xl p-8 sm:p-12 text-white mb-10 relative overflow-hidden shadow-xl">
+      {/* Header Banner - Streetwear Midnight Orange Glow */}
+      <div className="bg-gradient-to-r from-neutral-950 via-neutral-900 to-orange-950 rounded-3xl p-8 sm:p-12 text-white mb-10 relative overflow-hidden shadow-xl border border-neutral-800">
         <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-black tracking-widest uppercase mb-4 border border-white/20 text-indigo-200">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          <div className="inline-flex items-center space-x-2 bg-orange-500/20 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-black tracking-widest uppercase mb-4 border border-orange-500/30 text-orange-400">
+            <Sparkles className="w-3.5 h-3.5 text-orange-400" />
             <span>Fresh Off The Rack</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
             Latest Arrivals
           </h1>
-          <p className="text-indigo-100 text-sm sm:text-base mt-3 leading-relaxed">
+          <p className="text-neutral-300 text-sm sm:text-base mt-3 leading-relaxed">
             Be the first to explore newly added pieces, seasonal essentials, and limited-edition styles.
           </p>
         </div>
 
-        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-indigo-500/30 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl pointer-events-none" />
       </div>
 
       {/* Results Count */}
@@ -102,7 +102,7 @@ function NewArrivalsContent() {
           <p className="text-gray-500 text-xs">Stay tuned! We are restocking fresh catalog items regularly.</p>
           <Link
             href="/catalog"
-            className="inline-block mt-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 transition shadow-md"
+            className="inline-block mt-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-orange-600 transition shadow-md"
           >
             Explore Full Catalog
           </Link>
@@ -118,7 +118,6 @@ function NewArrivalsContent() {
               const isSaved = isInWishlist(product._id);
               const hasSecondaryImage = Array.isArray(product.images) && product.images.length > 1;
 
-              // Only show "NEW" badge if product is less than 30 days old
               const isProductNew = product.createdAt
                 ? (Date.now() - new Date(product.createdAt).getTime()) < THIRTY_DAYS_MS
                 : false;
@@ -155,7 +154,7 @@ function NewArrivalsContent() {
 
                       {/* 30-Day Conditional NEW Badge */}
                       {isProductNew && (
-                        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-indigo-600 text-white text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-md z-10">
+                        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-orange-500 text-white text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-md z-10">
                           New
                         </span>
                       )}
@@ -182,11 +181,11 @@ function NewArrivalsContent() {
 
                   <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between">
                     <div>
-                      <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
+                      <span className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">
                         {product.category}
                       </span>
                       <Link href={`/product/${product._id}`}>
-                        <h2 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-1 hover:text-indigo-600 transition-colors duration-150 mt-0.5">
+                        <h2 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-1 hover:text-orange-500 transition-colors duration-150 mt-0.5">
                           {product.title}
                         </h2>
                       </Link>
@@ -209,7 +208,7 @@ function NewArrivalsContent() {
                         className={`p-2 sm:p-2.5 rounded-xl active:scale-90 transition-all duration-200 flex items-center justify-center ${
                           addedId === product._id
                             ? 'bg-emerald-600 text-white scale-105'
-                            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
+                            : 'bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white'
                         }`}
                         aria-label="Quick Add"
                       >
@@ -244,7 +243,7 @@ function NewArrivalsContent() {
                   onClick={() => handlePageChange(pageNum)}
                   className={`w-9 h-9 rounded-xl text-xs font-bold transition ${
                     currentPage === pageNum
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                      ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
                       : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
                   }`}
                 >

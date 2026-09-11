@@ -332,7 +332,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
         <p className="text-gray-500 mt-2 text-sm">{error || "The item you're looking for doesn't exist."}</p>
         <Link
           href="/catalog"
-          className="inline-block mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-2xl text-sm transition shadow-lg shadow-indigo-600/20"
+          className="inline-block mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-2xl text-sm transition shadow-lg shadow-orange-500/20"
         >
           Back to Catalog
         </Link>
@@ -346,9 +346,9 @@ export default function ProductDetailPage({ params: paramsPromise }) {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 bg-white text-gray-900 min-h-screen pb-24 sm:pb-10">
       {/* Breadcrumb */}
       <nav className="flex items-center text-xs font-semibold text-gray-400 mb-8 space-x-2">
-        <Link href="/" className="hover:text-indigo-600 transition">Home</Link>
+        <Link href="/" className="hover:text-orange-500 transition">Home</Link>
         <span>/</span>
-        <Link href="/catalog" className="hover:text-indigo-600 transition">Catalog</Link>
+        <Link href="/catalog" className="hover:text-orange-500 transition">Catalog</Link>
         <span>/</span>
         <span className="text-gray-900 font-bold truncate">{product.title}</span>
       </nav>
@@ -384,7 +384,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                   onClick={() => setSelectedImage(img)}
                   className={`w-20 h-20 rounded-2xl overflow-hidden border-2 transition shrink-0 ${
                     selectedImage === img
-                      ? 'border-indigo-600 ring-2 ring-indigo-600/20'
+                      ? 'border-orange-500 ring-2 ring-orange-500/20'
                       : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
@@ -398,7 +398,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
         <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full">
+              <span className="text-xs font-bold uppercase tracking-wider text-orange-600 bg-orange-50 border border-orange-200 px-3 py-1 rounded-full">
                 {product.category}
               </span>
 
@@ -452,7 +452,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                       onClick={() => setSelectedSize(size)}
                       className={`px-4 py-2 text-xs font-bold rounded-xl border transition ${
                         selectedSize === size
-                          ? 'border-indigo-600 bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                          ? 'border-orange-500 bg-orange-500 text-white shadow-md shadow-orange-500/20'
                           : 'border-gray-200 text-gray-700 hover:border-gray-300 bg-white'
                       }`}
                     >
@@ -475,7 +475,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                       onClick={() => setSelectedColor(color)}
                       className={`px-4 py-2 text-xs font-bold rounded-xl border transition ${
                         selectedColor === color
-                          ? 'border-indigo-600 bg-indigo-50 text-indigo-600 font-extrabold'
+                          ? 'border-orange-500 bg-orange-50 text-orange-600 font-extrabold'
                           : 'border-gray-200 text-gray-700 hover:border-gray-300 bg-white'
                       }`}
                     >
@@ -523,7 +523,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
                       : added
                       ? 'bg-emerald-600 text-white shadow-emerald-200'
-                      : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+                      : 'bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200'
                   }`}
                 >
                   {added ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
@@ -534,10 +534,10 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                   type="button"
                   onClick={handleBuyNow}
                   disabled={product.stock === 0}
-                  className={`flex-1 py-3.5 px-6 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/25 active:scale-98 ${
+                  className={`flex-1 py-3.5 px-6 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-2 shadow-lg shadow-orange-500/25 active:scale-98 ${
                     product.stock === 0
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      : 'bg-orange-500 hover:bg-orange-600 text-white'
                   }`}
                 >
                   <CreditCard className="w-4 h-4" />
@@ -549,15 +549,15 @@ export default function ProductDetailPage({ params: paramsPromise }) {
 
           <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50/70 rounded-2xl border border-gray-100 text-center">
             <div className="flex flex-col items-center">
-              <Truck className="w-4 h-4 text-indigo-600 mb-1" />
+              <Truck className="w-4 h-4 text-orange-500 mb-1" />
               <span className="text-[11px] font-bold text-gray-800">Free Express Delivery</span>
             </div>
             <div className="flex flex-col items-center">
-              <RefreshCw className="w-4 h-4 text-indigo-600 mb-1" />
+              <RefreshCw className="w-4 h-4 text-orange-500 mb-1" />
               <span className="text-[11px] font-bold text-gray-800">30-Day Easy Returns</span>
             </div>
             <div className="flex flex-col items-center">
-              <ShieldCheck className="w-4 h-4 text-indigo-600 mb-1" />
+              <ShieldCheck className="w-4 h-4 text-orange-500 mb-1" />
               <span className="text-[11px] font-bold text-gray-800">100% Guaranteed</span>
             </div>
           </div>
@@ -577,7 +577,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
             )}
             <div className="truncate">
               <p className="font-bold text-gray-900 text-xs truncate leading-tight">{product.title}</p>
-              <span className="text-xs font-black text-indigo-600">₹{finalPrice.toLocaleString('en-IN')}</span>
+              <span className="text-xs font-black text-orange-500">₹{finalPrice.toLocaleString('en-IN')}</span>
             </div>
           </div>
 
@@ -591,7 +591,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                   ? 'bg-gray-100 text-gray-400 border-gray-200'
                   : added
                   ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                  : 'bg-orange-50 text-orange-600 border-orange-200'
               }`}
             >
               {added ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
@@ -601,7 +601,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
               type="button"
               onClick={handleBuyNow}
               disabled={product.stock === 0}
-              className="py-2.5 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1.5 shadow-md active:scale-95 disabled:bg-gray-200 disabled:text-gray-400"
+              className="py-2.5 px-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl transition flex items-center space-x-1.5 shadow-md active:scale-95 disabled:bg-gray-200 disabled:text-gray-400"
             >
               <CreditCard className="w-3.5 h-3.5" />
               <span>Buy Now</span>
@@ -615,13 +615,13 @@ export default function ProductDetailPage({ params: paramsPromise }) {
         <section className="mt-20 pt-10 border-t border-gray-100">
           <div className="flex justify-between items-end mb-6">
             <div>
-              <div className="inline-flex items-center space-x-1 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+              <div className="inline-flex items-center space-x-1 text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>You Might Also Like</span>
               </div>
               <h2 className="text-2xl font-black text-gray-900 tracking-tight">Recommended For You</h2>
             </div>
-            <Link href="/catalog" className="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1">
+            <Link href="/catalog" className="text-xs font-bold text-orange-500 hover:underline flex items-center gap-1">
               <span>View All</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -659,10 +659,10 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                     )}
                   </div>
                   <div className="p-3">
-                    <span className="text-[10px] font-bold uppercase text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md">
+                    <span className="text-[10px] font-bold uppercase text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md">
                       {item.category}
                     </span>
-                    <h3 className="font-bold text-gray-900 text-xs line-clamp-1 mt-1 group-hover:text-indigo-600 transition">
+                    <h3 className="font-bold text-gray-900 text-xs line-clamp-1 mt-1 group-hover:text-orange-500 transition">
                       {item.title}
                     </h3>
                     <div className="flex items-baseline space-x-1 mt-1">
@@ -721,7 +721,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                     )}
                   </div>
                   <div className="p-3">
-                    <h3 className="font-bold text-gray-900 text-xs line-clamp-1 group-hover:text-indigo-600 transition">
+                    <h3 className="font-bold text-gray-900 text-xs line-clamp-1 group-hover:text-orange-500 transition">
                       {item.title}
                     </h3>
                     <div className="flex items-baseline space-x-1 mt-1">
@@ -747,7 +747,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-              <MessageSquare className="w-6 h-6 text-indigo-600" />
+              <MessageSquare className="w-6 h-6 text-orange-500" />
               <span>Customer Reviews</span>
             </h2>
             <p className="text-gray-500 text-xs mt-1">Real feedback from verified store shoppers.</p>
@@ -813,7 +813,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="How was the fit, comfort, and fabric quality?"
-                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500"
                 ></textarea>
               </div>
 
@@ -838,7 +838,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
                   ))}
 
                   {reviewImages.length < 3 && (
-                    <label className="w-16 h-16 border-2 border-dashed border-gray-300 hover:border-indigo-600 rounded-lg flex flex-col items-center justify-center cursor-pointer transition bg-white text-gray-400 hover:text-indigo-600">
+                    <label className="w-16 h-16 border-2 border-dashed border-gray-300 hover:border-orange-500 rounded-lg flex flex-col items-center justify-center cursor-pointer transition bg-white text-gray-400 hover:text-orange-500">
                       <Camera className="w-5 h-5" />
                       <span className="text-[9px] font-bold mt-1">Add Photo</span>
                       <input
@@ -856,7 +856,7 @@ export default function ProductDetailPage({ params: paramsPromise }) {
               <button
                 type="submit"
                 disabled={submittingReview}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md disabled:opacity-50"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl text-xs transition shadow-md disabled:opacity-50"
               >
                 {submittingReview ? 'Submitting...' : 'Post Review'}
               </button>

@@ -27,7 +27,7 @@ function NavbarContent() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
-  
+
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentCategory = searchParams.get('category');
@@ -73,7 +73,7 @@ function NavbarContent() {
   return (
     <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        
+
         {/* Brand Logo & Context Badge */}
         <div className="flex items-center space-x-2 sm:space-x-3">
           <button
@@ -93,12 +93,12 @@ function NavbarContent() {
               />
             </div>
             <span className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">
-              HangOver.
+              HangOver
             </span>
           </Link>
 
           {isAdminPage && (
-            <span className="bg-indigo-100 text-indigo-700 text-[10px] font-extrabold uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md tracking-wider border border-indigo-200 shadow-sm transition-all duration-300">
+            <span className="bg-orange-100 text-orange-700 text-[10px] font-extrabold uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md tracking-wider border border-orange-200 shadow-sm transition-all duration-300">
               Admin Panel
             </span>
           )}
@@ -113,13 +113,13 @@ function NavbarContent() {
                 key={link.label}
                 href={link.href}
                 className={`relative flex items-center space-x-1.5 h-full transition-colors duration-200 ease-out ${
-                  link.active ? 'text-indigo-600 font-bold' : 'hover:text-indigo-600'
+                  link.active ? 'text-orange-500 font-bold' : 'hover:text-orange-500'
                 }`}
               >
                 {Icon && <Icon className="w-4 h-4 transition-transform duration-200 hover:scale-110" />}
                 <span>{link.label}</span>
                 <span
-                  className={`absolute bottom-0 left-0 h-0.5 bg-indigo-600 rounded-t-full transition-all duration-300 ease-out ${
+                  className={`absolute bottom-0 left-0 h-0.5 bg-orange-500 rounded-t-full transition-all duration-300 ease-out ${
                     link.active ? 'w-full opacity-100 scale-x-100' : 'w-full opacity-0 scale-x-0'
                   }`}
                 />
@@ -131,7 +131,7 @@ function NavbarContent() {
             <Link
               href="/catalog"
               target="_blank"
-              className="flex items-center space-x-1 text-gray-500 hover:text-indigo-600 transition-all duration-200 text-xs font-bold bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 my-auto shadow-sm hover:shadow"
+              className="flex items-center space-x-1 text-gray-500 hover:text-orange-500 transition-all duration-200 text-xs font-bold bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 my-auto shadow-sm hover:shadow"
             >
               <span>View Storefront</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -161,12 +161,12 @@ function NavbarContent() {
 
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="relative p-2 rounded-xl text-gray-700 hover:text-indigo-600 hover:bg-gray-100/80 active:scale-95 transition-all duration-200 ease-out"
+                className="relative p-2 rounded-xl text-gray-700 hover:text-orange-500 hover:bg-gray-100/80 active:scale-95 transition-all duration-200 ease-out"
                 aria-label="Open Cart"
               >
                 <ShoppingBag className="w-5 h-5" />
                 {totalItems > 0 && (
-                  <span className="absolute top-0.5 right-0.5 bg-indigo-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
+                  <span className="absolute top-0.5 right-0.5 bg-orange-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
                     {totalItems}
                   </span>
                 )}
@@ -190,7 +190,7 @@ function NavbarContent() {
                     className="w-8 h-8 rounded-full border border-gray-200 object-cover shadow-sm transition-transform duration-200 hover:scale-105"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-xs uppercase shadow-sm transition-transform duration-200 hover:scale-105">
+                  <div className="w-8 h-8 rounded-full bg-orange-500 text-white font-bold flex items-center justify-center text-xs uppercase shadow-sm transition-transform duration-200 hover:scale-105">
                     {session.user?.name?.[0] || 'U'}
                   </div>
                 )}
@@ -213,11 +213,11 @@ function NavbarContent() {
                   <Link
                     href="/account"
                     onClick={() => setDropdownOpen(false)}
-                    className={`flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors duration-150 font-medium ${
-                      pathname === '/account' ? 'bg-indigo-50/50 text-indigo-600 font-bold' : ''
+                    className={`flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-orange-500 transition-colors duration-150 font-medium ${
+                      pathname === '/account' ? 'bg-orange-50/60 text-orange-500 font-bold' : ''
                     }`}
                   >
-                    <Package className="w-4 h-4 text-indigo-600" />
+                    <Package className="w-4 h-4 text-orange-500" />
                     <span>My Orders</span>
                   </Link>
 
@@ -241,9 +241,9 @@ function NavbarContent() {
                         <Link
                           href="/admin/trending"
                           onClick={() => setDropdownOpen(false)}
-                          className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors duration-150 font-medium"
+                          className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-orange-500 transition-colors duration-150 font-medium"
                         >
-                          <Flame className="w-4 h-4 text-indigo-600" />
+                          <Flame className="w-4 h-4 text-orange-500" />
                           <span>Trending Products</span>
                         </Link>
                         <Link
@@ -251,7 +251,7 @@ function NavbarContent() {
                           onClick={() => setDropdownOpen(false)}
                           className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors duration-150 font-medium"
                         >
-                          <Store className="w-4 h-4 text-indigo-600" />
+                          <Store className="w-4 h-4 text-orange-500" />
                           <span>Go to Storefront</span>
                         </Link>
                       </>
@@ -261,7 +261,7 @@ function NavbarContent() {
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors duration-150 font-medium"
                       >
-                        <Package className="w-4 h-4 text-indigo-600" />
+                        <Package className="w-4 h-4 text-orange-500" />
                         <span>Admin Panel</span>
                       </Link>
                     )
@@ -282,7 +282,7 @@ function NavbarContent() {
           ) : (
             <Link
               href="/api/auth/signin"
-              className="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all duration-200 shadow-sm hover:shadow"
+              className="bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all duration-200 shadow-sm hover:shadow"
             >
               Sign In
             </Link>
@@ -301,8 +301,8 @@ function NavbarContent() {
                 href={link.href}
                 className={`flex items-center space-x-2.5 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${
                   link.active
-                    ? 'bg-indigo-50 text-indigo-600 font-extrabold'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600'
+                    ? 'bg-orange-50 text-orange-500 font-extrabold'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-orange-500'
                 }`}
               >
                 {Icon && <Icon className="w-4 h-4" />}

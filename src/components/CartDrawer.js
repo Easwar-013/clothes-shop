@@ -11,7 +11,6 @@ export default function CartDrawer() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Local state to handle unmounting delay for exit animations
   const [shouldRender, setShouldRender] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
 
@@ -29,7 +28,6 @@ export default function CartDrawer() {
 
   if (!shouldRender) return null;
 
-  // Calculate totals
   const totalItemsCount = cart.reduce((acc, item) => acc + (item.quantity || 1), 0);
   const calculatedTotal = cart.reduce(
     (total, item) => total + (item.price || 0) * (item.quantity || 1),
@@ -66,8 +64,8 @@ export default function CartDrawer() {
         {/* Header */}
         <div className="p-5 border-b border-gray-100/80 flex items-center justify-between bg-white/50 backdrop-blur-sm rounded-t-3xl">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
-              <ShoppingBag className="w-4 h-4 text-indigo-600" />
+            <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center">
+              <ShoppingBag className="w-4 h-4 text-orange-500" />
             </div>
             <div>
               <h2 className="text-sm font-black text-gray-900 leading-tight">Your Cart</h2>
@@ -89,7 +87,7 @@ export default function CartDrawer() {
         <div className="flex-1 overflow-y-auto p-5 space-y-3 max-h-[52vh] pr-2.5">
           {cart.length === 0 ? (
             <div className="text-center py-14 space-y-3">
-              <div className="w-16 h-16 rounded-3xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto text-indigo-500">
+              <div className="w-16 h-16 rounded-3xl bg-orange-50 border border-orange-100 flex items-center justify-center mx-auto text-orange-500">
                 <ShoppingBag className="w-8 h-8 animate-pulse" />
               </div>
               <h3 className="text-sm font-bold text-gray-900">Your cart is empty</h3>
@@ -101,7 +99,7 @@ export default function CartDrawer() {
                   setIsCartOpen(false);
                   router.push('/catalog');
                 }}
-                className="mt-2 inline-flex items-center space-x-1.5 text-xs text-indigo-600 font-extrabold hover:underline"
+                className="mt-2 inline-flex items-center space-x-1.5 text-xs text-orange-500 font-extrabold hover:underline"
               >
                 <span>Browse Products</span>
                 <ArrowRight className="w-3 h-3" />
@@ -111,7 +109,7 @@ export default function CartDrawer() {
             cart.map((item, idx) => (
               <div
                 key={`${item._id}-${item.size}-${item.color}-${idx}`}
-                className="flex items-center justify-between p-3 bg-white/70 hover:bg-white rounded-2xl border border-gray-200/70 hover:border-indigo-200/80 hover:shadow-md transition-all duration-200 group"
+                className="flex items-center justify-between p-3 bg-white/70 hover:bg-white rounded-2xl border border-gray-200/70 hover:border-orange-200/80 hover:shadow-md transition-all duration-200 group"
               >
                 <div className="flex items-center space-x-3 min-w-0">
                   {item.images?.[0] && (
@@ -122,7 +120,7 @@ export default function CartDrawer() {
                     />
                   )}
                   <div className="min-w-0">
-                    <h3 className="font-bold text-xs text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+                    <h3 className="font-bold text-xs text-gray-900 truncate group-hover:text-orange-500 transition-colors">
                       {item.title}
                     </h3>
                     <div className="flex items-center gap-1.5 text-[10px] text-gray-500 mt-0.5">
@@ -174,7 +172,7 @@ export default function CartDrawer() {
           <div className="p-5 border-t border-gray-100 space-y-3 bg-white/70 backdrop-blur-md rounded-b-3xl">
             <div className="flex justify-between items-baseline">
               <span className="text-xs font-black text-gray-900 uppercase tracking-wider">Subtotal</span>
-              <span className="text-lg font-black text-indigo-600">
+              <span className="text-lg font-black text-orange-500">
                 ₹{calculatedTotal.toLocaleString('en-IN')}
               </span>
             </div>
@@ -183,7 +181,7 @@ export default function CartDrawer() {
             <button
               onClick={handleCheckout}
               disabled={status === 'loading'}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/25 text-xs disabled:opacity-50"
+              className="w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-orange-500/25 text-xs disabled:opacity-50"
             >
               <span>{status === 'loading' ? 'Checking session...' : 'Proceed to Checkout'}</span>
               <ArrowRight className="w-3.5 h-3.5" />

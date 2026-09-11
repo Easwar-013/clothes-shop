@@ -196,7 +196,7 @@ function CatalogContent() {
           {/* Mobile Filter Trigger Button */}
           <button
             onClick={() => setShowMobileFilters(true)}
-            className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-bold active:scale-95 transition-all duration-200 shrink-0 border border-gray-200 shadow-sm"
+            className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-orange-500 hover:text-white rounded-xl text-xs font-bold active:scale-95 transition-all duration-200 shrink-0 border border-gray-200 shadow-sm"
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span>Filters</span>
@@ -209,7 +209,7 @@ function CatalogContent() {
               placeholder="Search clothes..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-9 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-sm text-gray-900 focus:bg-white focus:outline-none focus:border-indigo-600 transition-all duration-200"
+              className="w-full pl-10 pr-9 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-sm text-gray-900 focus:bg-white focus:outline-none focus:border-orange-500 transition-all duration-200"
             />
             <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
             
@@ -242,13 +242,13 @@ function CatalogContent() {
         >
           <div className="flex items-center justify-between pb-4 border-b border-gray-200">
             <div className="flex items-center space-x-2 font-bold text-gray-900 text-base">
-              <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
+              <SlidersHorizontal className="w-4 h-4 text-orange-500" />
               <span>Filters</span>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={clearFilters}
-                className="text-xs text-indigo-600 font-bold hover:underline flex items-center space-x-1 active:scale-95 transition-transform duration-150"
+                className="text-xs text-orange-500 font-bold hover:underline flex items-center space-x-1 active:scale-95 transition-transform duration-150"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset</span>
@@ -271,7 +271,7 @@ function CatalogContent() {
                   onClick={() => handleCategorySelect('')}
                   className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition-all duration-200 active:scale-98 ${
                     category === ''
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 translate-x-1'
+                      ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20 translate-x-1'
                       : 'text-gray-700 hover:bg-gray-200/60 hover:translate-x-0.5'
                   }`}
                 >
@@ -285,7 +285,7 @@ function CatalogContent() {
                       onClick={() => handleCategorySelect(cat)}
                       className={`block w-full text-left text-xs font-bold px-3 py-2 rounded-xl transition-all duration-200 active:scale-98 ${
                         isSelected
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 translate-x-1'
+                          ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20 translate-x-1'
                           : 'text-gray-700 hover:bg-gray-200/60 hover:translate-x-0.5'
                       }`}
                     >
@@ -308,7 +308,7 @@ function CatalogContent() {
                       onClick={() => setSelectedSize(isSelected ? '' : sz)}
                       className={`py-2 text-xs font-bold rounded-xl border transition-all duration-200 active:scale-95 ${
                         isSelected
-                          ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm scale-105'
+                          ? 'border-orange-500 bg-orange-500 text-white shadow-sm scale-105'
                           : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
@@ -323,7 +323,7 @@ function CatalogContent() {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-sm font-bold text-gray-900">Max Price</h3>
-                <span className="text-xs font-black text-indigo-600">
+                <span className="text-xs font-black text-orange-500">
                   ₹{Number(maxPrice).toLocaleString('en-IN')}
                 </span>
               </div>
@@ -334,13 +334,13 @@ function CatalogContent() {
                 step="500"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="w-full accent-indigo-600 cursor-pointer transition-all duration-150"
+                className="w-full accent-orange-500 cursor-pointer transition-all duration-150"
               />
             </div>
 
             <button
               onClick={() => setShowMobileFilters(false)}
-              className="w-full lg:hidden py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white rounded-xl font-bold text-xs shadow-md mt-4 transition-all duration-200"
+              className="w-full lg:hidden py-3 bg-orange-500 hover:bg-orange-600 active:scale-98 text-white rounded-xl font-bold text-xs shadow-md mt-4 transition-all duration-200"
             >
               Apply Filters
             </button>
@@ -374,7 +374,7 @@ function CatalogContent() {
               </p>
               <button
                 onClick={clearFilters}
-                className="mt-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 active:scale-95 transition-all duration-200 shadow-md"
+                className="mt-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-orange-600 active:scale-95 transition-all duration-200 shadow-md"
               >
                 Reset Search & Filters
               </button>
@@ -455,7 +455,7 @@ function CatalogContent() {
                       <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between">
                         <div>
                           <Link href={`/product/${product._id}`}>
-                            <h2 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-1 hover:text-indigo-600 transition-colors duration-150">
+                            <h2 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-1 hover:text-orange-500 transition-colors duration-150">
                               {product.title}
                             </h2>
                           </Link>
@@ -481,7 +481,7 @@ function CatalogContent() {
                             className={`p-2 sm:p-2.5 rounded-xl active:scale-90 transition-all duration-200 flex items-center justify-center ${
                               addedId === product._id
                                 ? 'bg-green-600 text-white scale-105'
-                                : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'
+                                : 'bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white'
                             }`}
                             aria-label="Quick Add to Cart"
                           >
@@ -516,7 +516,7 @@ function CatalogContent() {
                       onClick={() => handlePageChange(pageNum)}
                       className={`w-9 h-9 rounded-xl text-xs font-bold transition ${
                         currentPage === pageNum
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                          ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
                           : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
                       }`}
                     >

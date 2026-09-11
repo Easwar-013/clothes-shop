@@ -46,7 +46,7 @@ export default function RegisterPage() {
       <div className="max-w-md w-full bg-white p-8 rounded-3xl border border-gray-200/80 shadow-sm text-gray-900">
         <h1 className="text-3xl font-black text-center mb-1 tracking-tight">Create an Account</h1>
         <p className="text-gray-500 text-xs text-center mb-6 font-medium">
-          Join ATTIRE to start shopping
+          Join HangOver to start shopping
         </p>
 
         {error && (
@@ -55,7 +55,6 @@ export default function RegisterPage() {
           </div>
         )}
 
-        {/* Registration Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1.5">
@@ -66,7 +65,7 @@ export default function RegisterPage() {
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600 bg-white transition"
+              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500 bg-white transition"
               placeholder="John Doe"
             />
           </div>
@@ -80,7 +79,7 @@ export default function RegisterPage() {
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600 bg-white transition"
+              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500 bg-white transition"
               placeholder="you@example.com"
             />
           </div>
@@ -94,7 +93,7 @@ export default function RegisterPage() {
               required
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600 bg-white transition"
+              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-orange-500 bg-white transition"
               placeholder="••••••••"
             />
           </div>
@@ -102,13 +101,12 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition text-sm shadow-md shadow-indigo-600/20 disabled:opacity-50 mt-2"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition text-sm shadow-md shadow-orange-500/20 disabled:opacity-50 mt-2"
           >
             {loading ? 'Creating Account...' : 'Register'}
           </button>
         </form>
 
-        {/* OR CONTINUE WITH Divider (Matching Login Page) */}
         <div className="relative flex items-center justify-center my-6">
           <div className="border-t border-gray-200 w-full"></div>
           <span className="bg-white px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider absolute">
@@ -116,7 +114,6 @@ export default function RegisterPage() {
           </span>
         </div>
 
-        {/* Google Sign In Button at Bottom */}
         <button
           type="button"
           onClick={handleGoogleSignIn}
@@ -143,10 +140,9 @@ export default function RegisterPage() {
           <span>Sign in with Google</span>
         </button>
 
-        {/* Footer Link */}
         <p className="mt-6 text-center text-xs text-gray-500 font-medium">
           Already have an account?{' '}
-          <Link href="/login" className="text-indigo-600 font-bold hover:underline">
+          <Link href="/login" className="text-orange-500 font-bold hover:underline">
             Sign In
           </Link>
         </p>

@@ -10,11 +10,6 @@ import {
   Heart, 
   LogOut, 
   Package, 
-  Store, 
-  ExternalLink, 
-  Tag, 
-  MessageSquare,
-  Flame,
   Menu,
   X
 } from 'lucide-react';
@@ -31,9 +26,6 @@ function NavbarContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentCategory = searchParams.get('category');
-
-  const isAdminPage = pathname.startsWith('/admin');
-  const isAdminUser = session?.user?.role === 'admin';
 
   const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
@@ -54,15 +46,7 @@ function NavbarContent() {
     return pathname.startsWith(path);
   };
 
-  const navLinks = isAdminPage
-    ? [
-        { label: 'Products', href: '/admin/products', icon: Package, active: isActive('/admin/products') },
-        { label: 'Trending', href: '/admin/trending', icon: Flame, active: isActive('/admin/trending') },
-        { label: 'Orders', href: '/admin/orders', icon: Store, active: isActive('/admin/orders') },
-        { label: 'Coupons', href: '/admin/coupons', icon: Tag, active: isActive('/admin/coupons') },
-        { label: 'Messages', href: '/admin/messages', icon: MessageSquare, active: isActive('/admin/messages') },
-      ]
-    : [
+  const navLinks = [
         { label: 'Home', href: '/', active: isActive('/') },
         { label: 'Catalog', href: '/catalog', active: isActive('/catalog') },
         { label: 'Shirts', href: '/catalog?category=Shirts', active: isActive('/catalog', 'Shirts') },
@@ -84,7 +68,7 @@ function NavbarContent() {
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          <Link href={isAdminPage ? '/admin/products' : '/'} className="flex items-center space-x-2 group">
+          <Link href="/" className="flex items-center space-x-2 group">
             <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm shrink-0">
               <img
                 src="/hangover.jpeg"
@@ -97,11 +81,6 @@ function NavbarContent() {
             </span>
           </Link>
 
-          {isAdminPage && (
-            <span className="bg-orange-100 text-orange-700 text-[10px] font-extrabold uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md tracking-wider border border-orange-200 shadow-sm transition-all duration-300">
-              Admin Panel
-            </span>
-          )}
         </div>
 
         {/* Dynamic Desktop Navigation Links */}
@@ -127,22 +106,11 @@ function NavbarContent() {
             );
           })}
 
-          {isAdminPage && (
-            <Link
-              href="/catalog"
-              target="_blank"
-              className="flex items-center space-x-1 text-gray-500 hover:text-orange-500 transition-all duration-200 text-xs font-bold bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 my-auto shadow-sm hover:shadow"
-            >
-              <span>View Storefront</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
-          )}
         </div>
 
         {/* Right Actions Area */}
         <div className="flex items-center space-x-2 sm:space-x-4">
-          {!isAdminPage && (
-            <>
+          <>
               <Link
                 href="/wishlist"
                 onClick={() => markAsRead()}
@@ -171,8 +139,7 @@ function NavbarContent() {
                   </span>
                 )}
               </button>
-            </>
-          )}
+          </>
 
           {/* User Profile Avatar with Dropdown */}
           {session ? (
@@ -235,37 +202,6 @@ function NavbarContent() {
                     <span>My Wishlist</span>
                   </Link>
 
-                  {isAdminUser && (
-                    isAdminPage ? (
-                      <>
-                        <Link
-                          href="/admin/trending"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-orange-500 transition-colors duration-150 font-medium"
-                        >
-                          <Flame className="w-4 h-4 text-orange-500" />
-                          <span>Trending Products</span>
-                        </Link>
-                        <Link
-                          href="/catalog"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors duration-150 font-medium"
-                        >
-                          <Store className="w-4 h-4 text-orange-500" />
-                          <span>Go to Storefront</span>
-                        </Link>
-                      </>
-                    ) : (
-                      <Link
-                        href="/admin/products"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors duration-150 font-medium"
-                      >
-                        <Package className="w-4 h-4 text-orange-500" />
-                        <span>Admin Panel</span>
-                      </Link>
-                    )
-                  )}
                 </div>
 
                 <div className="border-t border-gray-100 pt-1">
@@ -311,16 +247,6 @@ function NavbarContent() {
             );
           })}
 
-          {isAdminPage && (
-            <Link
-              href="/catalog"
-              target="_blank"
-              className="flex items-center justify-between px-3.5 py-2.5 mt-2 rounded-xl text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 transition border border-gray-200"
-            >
-              <span>View Storefront</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
-          )}
         </div>
       )}
     </nav>

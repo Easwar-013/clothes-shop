@@ -25,20 +25,7 @@ export const authOptions = {
           throw new Error('Please enter credentials');
         }
 
-        // 1. Check default admin credentials
-        if (
-          (inputIdentifier === 'admin' || inputIdentifier === 'admin@attire.com') &&
-          inputPassword === 'admin123'
-        ) {
-          return {
-            id: 'admin-super-user',
-            name: 'System Admin',
-            email: 'admin@attire.com',
-            role: 'admin',
-          };
-        }
-
-        // 2. Regular User Authentication via MongoDB
+        // Regular user authentication via MongoDB
         await dbConnect();
 
         const user = await User.findOne({ email: inputIdentifier });

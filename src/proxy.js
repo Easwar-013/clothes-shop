@@ -19,20 +19,9 @@ export async function proxy(req) {
     }
   }
 
-  // Protect /admin routes
-  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
-    if (!token) {
-      return NextResponse.redirect(new URL('/login', req.url));
-    }
-
-    if (token.role !== 'admin') {
-      return NextResponse.redirect(new URL('/catalog', req.url));
-    }
-  }
-
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/checkout/:path*', '/admin/:path*', '/api/admin/:path*'],
+  matcher: ['/checkout/:path*'],
 };

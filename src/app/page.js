@@ -1,23 +1,36 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ShoppingBag, Sparkles, Check } from 'lucide-react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import { useCart } from '@/context/CartContext';
 import ClothesLoader from '@/components/ClothesLoader';
 
+gsap.registerPlugin(useGSAP);
+
 const TRENDING_ORDER_STORAGE_KEY = 'attire_trending_selection_order';
+const ADMIN_TRENDING_ORDER_KEY = 'attire_admin_trending_order';
+const TRENDING_POLL_MS = 5000;
 
 export default function HomePage() {
   const { addToCart } = useCart();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addedId, setAddedId] = useState(null);
-  const [isPaused, setIsPaused] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
 
+  const sectionRef = useRef(null);
   const scrollRef = useRef(null);
-  const animFrameId = useRef(null);
-  const accumulatedScroll = useRef(0);
+  const hoverTimer = useRef(null);
+  const lastKey = useRef('');
+  const swayRef = useRef([]);
+  const activeRef = useRef(null);
+  const touchHold = useRef(false);
+  const touchTimer = useRef(null);
+  const lastSignature = useRef('');
 
   const categories = [
     { name: 'Shirts', image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?q=80&w=800&auto=format&fit=crop', count: '12+ Items' },
@@ -26,85 +39,293 @@ export default function HomePage() {
     { name: 'Pants', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800&auto=format&fit=crop', count: '10+ Items' },
   ];
 
-  useEffect(() => {
-    async function fetchProducts() {
+  const loadTrending = useCallback(async (initial = false) => {
+    try {
+      if (initial) setLoading(true);
+      const res = await fetch('/api/products', { cache: 'no-store' });
+      // If the server answers with an HTML error page, skip this refresh instead of throwing
+      const data = await res.json().catch(() => null);
+      if (!data || !data.success) return;
+
+      const rawProducts = data.products || [];
+
+      let savedOrder = [];
       try {
-        setLoading(true);
-        const res = await fetch('/api/products');
-        const data = await res.json();
-        if (data.success && data.products?.length > 0) {
-          const rawProducts = data.products;
-
-          let savedOrder = [];
-          try {
-            const stored = localStorage.getItem(TRENDING_ORDER_STORAGE_KEY);
-            if (stored) savedOrder = JSON.parse(stored);
-          } catch (e) {
-            console.error('Failed to read trending order', e);
-          }
-
-          const featuredProducts = rawProducts.filter((p) => p.isFeatured === true);
-
-          let orderedFeatured = [];
-          if (savedOrder.length > 0) {
-            orderedFeatured = savedOrder
-              .map((id) => featuredProducts.find((p) => p._id === id))
-              .filter(Boolean);
-
-            const missing = featuredProducts.filter((p) => !savedOrder.includes(p._id));
-            orderedFeatured = [...orderedFeatured, ...missing];
-          } else {
-            orderedFeatured = featuredProducts;
-          }
-
-          const nonFeatured = rawProducts
-            .filter((p) => !p.isFeatured)
-            .sort((a, b) => Number(b.offer || 0) - Number(a.offer || 0));
-
-          const combined = orderedFeatured.length > 0 ? orderedFeatured.slice(0, 7) : nonFeatured;
-          setProducts(combined);
-        }
-      } catch (err) {
-        console.error('Failed to load products', err);
-      } finally {
-        setLoading(false);
+        [TRENDING_ORDER_STORAGE_KEY, ADMIN_TRENDING_ORDER_KEY].forEach((key) => {
+          const stored = localStorage.getItem(key);
+          if (stored) savedOrder = [...savedOrder, ...JSON.parse(stored).map(String)];
+        });
+      } catch (e) {
+        console.error('Failed to read trending order', e);
       }
-    }
 
-    fetchProducts();
+      const featuredProducts = rawProducts.filter((p) => p.isFeatured === true);
+
+      // Admin order: items with a server timestamp follow the order they were added;
+      // older items (no timestamp) keep the saved/legacy order and come first.
+      const timed = featuredProducts
+        .filter((p) => p.trendingAt)
+        .sort((a, b) => new Date(a.trendingAt) - new Date(b.trendingAt));
+      const untimed = featuredProducts
+        .filter((p) => !p.trendingAt)
+        .sort((a, b) => {
+          const ia = savedOrder.indexOf(String(a._id));
+          const ib = savedOrder.indexOf(String(b._id));
+          return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+        });
+      const orderedFeatured = [...untimed, ...timed];
+
+      const nonFeatured = rawProducts
+        .filter((p) => !p.isFeatured)
+        .sort((a, b) => Number(b.offer || 0) - Number(a.offer || 0));
+
+      const combined = orderedFeatured.length > 0 ? orderedFeatured.slice(0, 7) : nonFeatured;
+
+      // Only update state when something visible changed (keeps the rail from restarting)
+      const signature = JSON.stringify(
+        combined.map((p) => [p._id, p.title, p.description, p.category, p.price, p.offer, p.images?.[0]])
+      );
+      if (signature !== lastSignature.current) {
+        lastSignature.current = signature;
+        setProducts(combined);
+      }
+    } catch (err) {
+      console.error('Failed to load products', err);
+    } finally {
+      if (initial) setLoading(false);
+    }
   }, []);
 
-  const displayProducts = products.length > 0 ? [...products, ...products, ...products, ...products] : [];
-
+  // Initial load + real-time sync with the admin trending manager
   useEffect(() => {
-    const container = scrollRef.current;
-    if (loading || displayProducts.length === 0 || !container) return;
+    loadTrending(true);
 
-    accumulatedScroll.current = container.scrollLeft;
-
-    const step = () => {
-      if (!isPaused && container) {
-        if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 5) {
-          accumulatedScroll.current = 1;
-          container.scrollLeft = 1;
-        } else {
-          accumulatedScroll.current += 1;
-          container.scrollLeft = Math.floor(accumulatedScroll.current);
-        }
-      } else if (container) {
-        accumulatedScroll.current = container.scrollLeft;
+    const refresh = () => {
+      if (!document.hidden) loadTrending();
+    };
+    const poll = setInterval(refresh, TRENDING_POLL_MS);
+    const onStorage = (e) => {
+      // Admin portal open in another tab of this browser: refetch right after its save lands
+      if (e.key === ADMIN_TRENDING_ORDER_KEY || e.key === TRENDING_ORDER_STORAGE_KEY) {
+        setTimeout(refresh, 800);
       }
-      animFrameId.current = requestAnimationFrame(step);
     };
 
-    animFrameId.current = requestAnimationFrame(step);
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    window.addEventListener('storage', onStorage);
 
     return () => {
-      if (animFrameId.current) {
-        cancelAnimationFrame(animFrameId.current);
-      }
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('storage', onStorage);
     };
-  }, [loading, displayProducts, isPaused]);
+  }, [loadTrending]);
+
+  activeRef.current = activeIndex;
+
+  useEffect(() => () => clearTimeout(hoverTimer.current), []);
+
+  // Touch / small screens have no hover, so the rail drifts by itself there
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px), (hover: none)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  // Mobile: a tapped garment closes again after a few seconds so the drift resumes
+  useEffect(() => {
+    if (!isMobile || activeIndex === null) return;
+    const t = setTimeout(() => setActiveIndex(null), 4500);
+    return () => clearTimeout(t);
+  }, [isMobile, activeIndex]);
+
+  // Hover intent: avoids flicker while neighbours slide apart
+  const openItem = (i) => {
+    clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => setActiveIndex(i), 50);
+  };
+  const closeRail = () => {
+    clearTimeout(hoverTimer.current);
+    setActiveIndex(null);
+  };
+
+  // Start a swing that fades out on its own after a few seconds
+  const lastMove = useRef(0);
+  const nudgeItem = (i, strength) => {
+    const o = swayRef.current[i];
+    if (!o) return;
+    o.start = gsap.ticker.time;
+    o.energy = Math.max(o.energy, strength);
+    gsap.to(o, { energy: 0, duration: 3.2, ease: 'power2.out', overwrite: 'auto' });
+  };
+
+  // GSAP: garments hang edge-on; the hovered one swings round to face the shopper
+  const trendingKey = products.map((p) => p._id).join(',') + (isMobile ? '|m' : '');
+  useGSAP(
+    () => {
+      if (loading || !trendingKey) return;
+
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const small = window.innerWidth < 640;
+      const collapsedW = small ? 52 : 76;
+      const expandedW = small ? 256 : 296;
+      const dur = reduce ? 0 : 0.65;
+      const items = gsap.utils.toArray('.rail-item');
+      const isNewLineup = lastKey.current !== trendingKey;
+      lastKey.current = trendingKey;
+
+      const cardW = small ? 240 : 280;
+
+      items.forEach((item, i) => {
+        const active = i === activeIndex;
+        const hasSide = item.dataset.side === '1';
+        const card = item.querySelector('.rail-card');
+        const hanger = item.querySelector('.rail-hanger');
+        const info = item.querySelectorAll('.rail-info, .rail-badge');
+        const front = item.querySelector('.rail-front');
+        const side = item.querySelector('.rail-side');
+
+        // [target, vars, extra tween options]
+        const plan = [
+          [item, { width: active ? expandedW : collapsedW }, {}],
+          [hanger, { rotationY: active ? 0 : -84, transformPerspective: 1400, transformOrigin: '50% 0%' }, {}], // hanger also turns edge-on
+          [
+            info,
+            { opacity: active ? 1 : 0, pointerEvents: active ? 'auto' : 'none' },
+            { dur: dur * 0.6, delay: active ? dur * 0.45 : 0 },
+          ],
+        ];
+
+        if (hasSide) {
+          // Uploaded side photo: slim garment showing the side view, opens to the front photo
+          plan.push([card, { rotationY: 0, transformPerspective: 1600, width: active ? cardW : collapsedW }, {}]);
+          if (front) plan.push([front, { opacity: active ? 1 : 0 }, { dur: dur * 0.7 }]);
+          if (side) plan.push([side, { opacity: active ? 0 : 1 }, { dur: dur * 0.7 }]);
+        } else {
+          // No side photo: fall back to turning the front photo edge-on
+          plan.push([
+            card,
+            { rotationY: active ? 0 : -72, transformPerspective: 1600, transformOrigin: '50% 50%' },
+            {},
+          ]);
+        }
+
+        plan.forEach(([target, vars, extra]) => {
+          if (!target) return;
+          if (isNewLineup) {
+            gsap.set(target, vars);
+          } else {
+            gsap.to(target, {
+              ...vars,
+              duration: extra.dur ?? dur,
+              delay: extra.delay ?? 0,
+              ease: 'power3.out',
+              overwrite: 'auto',
+            });
+          }
+        });
+
+      });
+
+      // Real-hanging feel: the hovered garment starts swinging, neighbours get nudged
+      if (!reduce && !isNewLineup && activeIndex !== null) {
+        nudgeItem(activeIndex, 1);
+        nudgeItem(activeIndex - 1, 0.45);
+        nudgeItem(activeIndex + 1, 0.45);
+      }
+
+      if (isNewLineup && !reduce) {
+        gsap.fromTo(
+          items,
+          { y: -40, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.8,
+            ease: 'back.out(1.6)',
+            stagger: 0.07,
+            clearProps: 'transform,opacity',
+          }
+        );
+      }
+    },
+    { scope: sectionRef, dependencies: [activeIndex, trendingKey, loading] }
+  );
+
+  // GSAP: pendulum swing on each hook, driven only by hover energy (rests when energy is 0)
+  useGSAP(
+    () => {
+      swayRef.current = [];
+      if (loading || !trendingKey) return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const state = gsap.utils.toArray('.rail-sway').map((el, i) => {
+        gsap.set(el, { transformOrigin: '50% 0%' });
+        return { el, energy: 0, start: 0, resting: true, speed: 4.2 + (i % 3) * 0.5 };
+      });
+      swayRef.current = state;
+
+      const tick = (time) => {
+        state.forEach((o) => {
+          if (o.energy < 0.002) {
+            if (!o.resting) {
+              gsap.set(o.el, { rotation: 0 });
+              o.resting = true;
+            }
+            return;
+          }
+          o.resting = false;
+          gsap.set(o.el, { rotation: Math.sin((time - o.start) * o.speed) * 4 * o.energy });
+        });
+      };
+      gsap.ticker.add(tick);
+
+      return () => {
+        gsap.ticker.remove(tick);
+        swayRef.current = [];
+      };
+    },
+    { scope: sectionRef, dependencies: [trendingKey, loading] }
+  );
+
+  // GSAP: mobile auto-drift, right to left, looping seamlessly over repeated copies
+  useGSAP(
+    () => {
+      const el = scrollRef.current;
+      if (!isMobile || loading || !trendingKey || !el) return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      let pos = el.scrollLeft;
+      const count = products.length;
+      const tick = (time, delta) => {
+        // paused while the shopper is touching/swiping or a garment is open
+        if (touchHold.current || activeRef.current !== null || document.hidden) {
+          pos = el.scrollLeft;
+          return;
+        }
+        const rows = el.querySelectorAll('.rail-item');
+        const first = rows[0];
+        const next = rows[count];
+        if (!first || !next) return;
+        const setWidth = next.offsetLeft - first.offsetLeft;
+        pos += 0.045 * delta; // ~45px per second
+        if (setWidth > 0 && pos >= setWidth) pos -= setWidth;
+        el.scrollLeft = pos;
+      };
+      gsap.ticker.add(tick);
+      return () => gsap.ticker.remove(tick);
+    },
+    { scope: sectionRef, dependencies: [isMobile, trendingKey, loading] }
+  );
+
+  // On mobile the lineup is repeated so the loop never shows a gap
+  const railItems = (isMobile ? [0, 1, 2, 3] : [0]).flatMap((copy) =>
+    products.map((p) => ({ product: p, key: `${p._id}-${copy}` }))
+  );
 
   const handleQuickAdd = (product, finalPrice, e) => {
     e.preventDefault();
@@ -170,7 +391,7 @@ export default function HomePage() {
       </section>
 
       {/* 2. Trending Section (Above Category Grid) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
+      <section ref={sectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
         <div className="flex justify-between items-end">
           <div>
             <div className="inline-flex items-center space-x-1.5 text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
@@ -194,94 +415,139 @@ export default function HomePage() {
             No items available right now.
           </div>
         ) : (
-          <div
-            ref={scrollRef}
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-            onTouchStart={() => setIsPaused(true)}
-            onTouchEnd={() => setIsPaused(false)}
-            className="flex space-x-4 sm:space-x-6 overflow-x-auto py-2 px-1 no-scrollbar cursor-grab active:cursor-grabbing"
-          >
-            {displayProducts.map((product, idx) => {
-              const originalPrice = Number(product.price) || 0;
-              const offerPercent = Number(product.offer) || 0;
-              const hasOffer = offerPercent > 0;
+          <div className="relative">
+            {/* Chrome clothing rail */}
+            <div className="pointer-events-none absolute left-0 right-0 top-0 h-3 rounded-full bg-gradient-to-b from-gray-100 via-gray-300 to-gray-500 shadow-[0_6px_10px_-4px_rgba(0,0,0,0.35)]" />
 
-              const finalPrice = hasOffer
-                ? Number((originalPrice - (originalPrice * offerPercent) / 100).toFixed(2))
-                : originalPrice;
+            <div
+              ref={scrollRef}
+              onMouseLeave={closeRail}
+              onTouchStart={() => {
+                touchHold.current = true;
+                clearTimeout(touchTimer.current);
+              }}
+              onTouchEnd={() => {
+                clearTimeout(touchTimer.current);
+                touchTimer.current = setTimeout(() => {
+                  touchHold.current = false;
+                }, 2500);
+              }}
+              className="overflow-x-auto no-scrollbar pb-6"
+            >
+              <div className="flex w-max mx-auto items-start gap-3 sm:gap-5 px-1">
+                {railItems.map(({ product, key }, idx) => {
+                  const originalPrice = Number(product.price) || 0;
+                  const offerPercent = Number(product.offer) || 0;
+                  const hasOffer = offerPercent > 0;
 
-              return (
-                <div
-                  key={`${product._id}-${idx}`}
-                  className="w-[240px] sm:w-[280px] shrink-0 group bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-                >
-                  <Link href={`/product/${product._id}`} className="block relative">
-                    <div className="aspect-[4/5] bg-gray-100 overflow-hidden relative">
-                      {product.images?.[0] ? (
-                        <img
-                          src={product.images[0]}
-                          alt={product.title}
-                          className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                          No Image
-                        </div>
-                      )}
+                  const finalPrice = hasOffer
+                    ? Number((originalPrice - (originalPrice * offerPercent) / 100).toFixed(2))
+                    : originalPrice;
 
-                      {product.category && (
-                        <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-xs font-bold text-gray-900 px-2.5 py-1 rounded-md border border-gray-200">
-                          {product.category}
-                        </span>
-                      )}
-
-                      {hasOffer && (
-                        <span className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md">
-                          {offerPercent}% OFF
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-
-                  <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between">
-                    <div>
-                      <Link href={`/product/${product._id}`}>
-                        <h3 className="font-bold text-gray-900 text-sm sm:text-base line-clamp-1 hover:text-orange-500 transition">
-                          {product.title}
-                        </h3>
-                      </Link>
-                      <p className="text-gray-500 text-xs mt-1 line-clamp-1">{product.description || 'No description provided.'}</p>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-3 sm:mt-4 pt-3 border-t border-gray-100">
-                      <div className="flex items-baseline space-x-1.5">
-                        <span className="text-base sm:text-lg font-black text-gray-900">
-                          ₹{finalPrice.toLocaleString('en-IN')}
-                        </span>
-                        {hasOffer && (
-                          <span className="text-xs font-bold text-gray-400 line-through">
-                            ₹{originalPrice.toLocaleString('en-IN')}
-                          </span>
-                        )}
-                      </div>
-
-                      <button
-                        onClick={(e) => handleQuickAdd(product, finalPrice, e)}
-                        className={`p-2 sm:p-2.5 rounded-xl transition flex items-center justify-center ${
-                          addedId === product._id
-                            ? 'bg-green-600 text-white'
-                            : 'bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white'
-                        }`}
-                        aria-label="Quick Add to Cart"
+                  return (
+                    <div
+                      key={key}
+                      onMouseEnter={() => openItem(idx)}
+                      onMouseMove={() => {
+                        const now = Date.now();
+                        if (now - lastMove.current > 600) {
+                          lastMove.current = now;
+                          nudgeItem(idx, 0.35);
+                        }
+                      }}
+                      onFocusCapture={() => setActiveIndex(idx)}
+                      onClickCapture={(e) => {
+                        // Touch: first tap swings the garment round, second tap opens it
+                        if (activeIndex !== idx) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setActiveIndex(idx);
+                          e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                        }
+                      }}
+                      data-side={product.sideImage ? '1' : '0'}
+                      className="rail-item relative shrink-0 w-[52px] sm:w-[76px]"
+                    >
+                      <div className="rail-sway relative flex justify-center pt-[14px] pb-[76px]">
+                      {/* Wooden hanger: sits behind the garment, only the hook shows above it */}
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 130 52"
+                        className="rail-hanger absolute top-0 left-1/2 -ml-[65px] w-[130px] h-[52px] z-0 pointer-events-none"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       >
-                        {addedId === product._id ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
-                      </button>
+                        <path d="M65 30V24C65 20 71 18 71 12C71 7 66 4 62 6" stroke="#6b7280" strokeWidth="2.5" />
+                        <path d="M65 30L30 42H100L65 30Z" stroke="#c8935a" strokeWidth="4" />
+                      </svg>
+
+                      <div className="rail-card relative z-10 shrink-0 w-[240px] sm:w-[280px] will-change-transform">
+                        <Link href={`/product/${product._id}`} className="block relative">
+                          <div className="h-[280px] sm:h-[340px] overflow-hidden relative">
+                            {product.images?.[0] ? (
+                              <img
+                                src={product.images[0]}
+                                alt={product.title}
+                                className="rail-front w-full h-full object-contain object-top"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                                No Image
+                              </div>
+                            )}
+
+                            {product.sideImage && (
+                              <img
+                                src={product.sideImage}
+                                alt={`${product.title} side view`}
+                                className="rail-side absolute inset-0 w-full h-full object-cover object-top"
+                              />
+                            )}
+
+                            {hasOffer && (
+                              <span className="rail-badge absolute top-2 right-2 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md">
+                                {offerPercent}% OFF
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+
+                        <div className="rail-info absolute top-full left-0 right-0 pt-2 text-center">
+                          <Link href={`/product/${product._id}`}>
+                            <h3 className="font-bold text-gray-900 text-sm line-clamp-1 hover:text-orange-500 transition">
+                              {product.title}
+                            </h3>
+                          </Link>
+                          <div className="flex items-center justify-center gap-2 mt-1">
+                            <span className="text-base font-black text-gray-900">
+                              ₹{finalPrice.toLocaleString('en-IN')}
+                            </span>
+                            {hasOffer && (
+                              <span className="text-xs font-bold text-gray-400 line-through">
+                                ₹{originalPrice.toLocaleString('en-IN')}
+                              </span>
+                            )}
+                            <button
+                              onClick={(e) => handleQuickAdd(product, finalPrice, e)}
+                              className={`p-2 rounded-xl transition flex items-center justify-center ${
+                                addedId === product._id
+                                  ? 'bg-green-600 text-white'
+                                  : 'bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white'
+                              }`}
+                              aria-label="Quick Add to Cart"
+                            >
+                              {addedId === product._id ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </section>

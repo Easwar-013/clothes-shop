@@ -16,7 +16,9 @@ const ProductSchema = new mongoose.Schema(
     sizes: [{ type: String }],
     colors: [{ type: String }],
     images: [{ type: String }],
+    sideImage: { type: String, default: '' },
     isFeatured: { type: Boolean, default: false },
+    trendingAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

@@ -10,8 +10,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "bcryptjs": "^3.0.3",
     "crypto": "^1.0.1",
+    "gsap": "^3.13.0",
     "jose": "^6.2.3",
     "lucide-react": "^1.25.0",
     "mongoose": "^9.8.0",

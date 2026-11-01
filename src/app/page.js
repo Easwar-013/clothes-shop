@@ -29,6 +29,7 @@ export default function HomePage() {
   const swayRef = useRef([]);
   const activeRef = useRef(null);
   const touchHold = useRef(false);
+  const downActive = useRef(false); // was this garment already open when the finger/mouse went down?
   const touchTimer = useRef(null);
   const lastSignature = useRef('');
 
@@ -447,7 +448,12 @@ export default function HomePage() {
                   return (
                     <div
                       key={key}
-                      onMouseEnter={() => openItem(idx)}
+                      onPointerDownCapture={() => {
+                        downActive.current = activeRef.current === idx;
+                      }}
+                      onPointerEnter={(e) => {
+                        if (e.pointerType === 'mouse') openItem(idx);
+                      }}
                       onMouseMove={() => {
                         const now = Date.now();
                         if (now - lastMove.current > 600) {
@@ -455,10 +461,16 @@ export default function HomePage() {
                           nudgeItem(idx, 0.35);
                         }
                       }}
-                      onFocusCapture={() => setActiveIndex(idx)}
+                      onFocusCapture={() => {
+                        if (!isMobile) setActiveIndex(idx);
+                      }}
                       onClickCapture={(e) => {
-                        // Touch: first tap swings the garment round, second tap opens it
-                        if (activeIndex !== idx) {
+                        // Touch: first tap swings the garment round, second tap opens it.
+                        // (Uses the state from when the finger went down, because focus/mouse events
+                        // that follow a tap would otherwise mark it open before this click.)
+                        const touchLike = isMobile || e.nativeEvent.pointerType === 'touch';
+                        const alreadyOpen = touchLike ? downActive.current : activeIndex === idx;
+                        if (!alreadyOpen) {
                           e.preventDefault();
                           e.stopPropagation();
                           setActiveIndex(idx);

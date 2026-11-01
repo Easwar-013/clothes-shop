@@ -29,7 +29,8 @@ export default function HomePage() {
   const swayRef = useRef([]);
   const activeRef = useRef(null);
   const touchHold = useRef(false);
-  const prevActive = useRef(null);
+  const prevOpen = useRef(null);
+  const scrollTween = useRef(null);
   const lastOpen = useRef(-1);
   const downActive = useRef(false); // was this garment already open when the finger/mouse went down?
   const touchTimer = useRef(null);
@@ -139,10 +140,10 @@ export default function HomePage() {
     return () => mq.removeEventListener('change', update);
   }, []);
 
-  // Mobile: an opened garment closes again after 3 seconds so the drift resumes
+  // Mobile: an opened garment stays open ~3s (after its 0.9s turn), then closes so the drift resumes
   useEffect(() => {
     if (!isMobile || activeIndex === null) return;
-    const t = setTimeout(() => setActiveIndex(null), 3000);
+    const t = setTimeout(() => setActiveIndex(null), 3900);
     return () => clearTimeout(t);
   }, [isMobile, activeIndex]);
 
@@ -176,7 +177,8 @@ export default function HomePage() {
       const small = window.innerWidth < 640;
       const collapsedW = small ? 52 : 76;
       const expandedW = small ? 256 : 296;
-      const dur = reduce ? 0 : 0.65;
+      const dur = reduce ? 0 : isMobile ? 0.9 : 0.65;
+      const ease = isMobile ? 'power2.inOut' : 'power3.out';
       const items = gsap.utils.toArray('.rail-item');
       const isNewLineup = lastKey.current !== trendingKey;
       lastKey.current = trendingKey;
@@ -226,13 +228,52 @@ export default function HomePage() {
               ...vars,
               duration: extra.dur ?? dur,
               delay: extra.delay ?? 0,
-              ease: 'power3.out',
+              ease,
               overwrite: 'auto',
             });
           }
         });
 
       });
+
+      // Mobile: glide the rail in step with the width change, so the garment opens/closes
+      // around the middle of the screen and its neighbours move smoothly (no jumps)
+      const scroller = scrollRef.current;
+      if (isMobile && scroller && !isNewLineup) {
+        const rowsAll = scroller.querySelectorAll('.rail-item');
+        const startScroll = scroller.scrollLeft;
+        let endScroll = null;
+
+        if (activeIndex !== null && rowsAll[activeIndex]) {
+          // final position of the row once any garment that is closing has finished shrinking
+          let left = rowsAll[activeIndex].offsetLeft;
+          const prev = prevOpen.current;
+          if (prev !== null && prev < activeIndex && rowsAll[prev]) {
+            left -= Math.max(0, rowsAll[prev].offsetWidth - collapsedW);
+          }
+          endScroll = left + expandedW / 2 - scroller.clientWidth / 2;
+        } else if (activeIndex === null && prevOpen.current !== null && rowsAll[prevOpen.current]) {
+          // line the next garment up just before the middle so the showcase carries on
+          const gap = parseFloat(getComputedStyle(rowsAll[0].parentElement).columnGap) || 12;
+          const closedRow = rowsAll[prevOpen.current];
+          endScroll = closedRow.offsetLeft + collapsedW + gap + collapsedW / 2 - 28 - scroller.clientWidth / 2;
+        }
+
+        scrollTween.current?.kill();
+        if (endScroll !== null) {
+          const target = Math.max(0, endScroll);
+          const prog = { p: 0 };
+          scrollTween.current = gsap.to(prog, {
+            p: 1,
+            duration: dur,
+            ease,
+            onUpdate: () => {
+              scroller.scrollLeft = startScroll + (target - startScroll) * prog.p;
+            },
+          });
+        }
+      }
+      prevOpen.current = activeIndex;
 
       // Real-hanging feel: the hovered garment starts swinging, neighbours get nudged
       if (!reduce && !isNewLineup && activeIndex !== null) {
@@ -295,16 +336,6 @@ export default function HomePage() {
     { scope: sectionRef, dependencies: [trendingKey, loading] }
   );
 
-  // Smoothly scroll the rail so garment `g` (once open) sits in the middle of the screen
-  const centerRail = (g) => {
-    const el = scrollRef.current;
-    const row = el?.querySelectorAll('.rail-item')[g];
-    if (!row) return;
-    const openWidth = window.innerWidth < 640 ? 256 : 296;
-    const target = Math.max(0, row.offsetLeft + openWidth / 2 - el.clientWidth / 2);
-    gsap.to(el, { scrollLeft: target, duration: 0.65, ease: 'power3.out', overwrite: true });
-  };
-
   // GSAP: mobile auto-drift, right to left, looping seamlessly over repeated copies
   useGSAP(
     () => {
@@ -323,22 +354,10 @@ export default function HomePage() {
 
         const openIdx = activeRef.current;
 
-        // A garment just closed: line the next one up just before the centre so the showcase continues
-        if (openIdx === null && prevActive.current !== null) {
-          const closed = rows[prevActive.current];
-          if (closed && !touchHold.current) {
-            const gap = parseFloat(getComputedStyle(first.parentElement).columnGap) || 12;
-            const slot = window.innerWidth < 640 ? 52 : 76;
-            const nextCenter = closed.offsetLeft + slot + gap + slot / 2;
-            const target = Math.max(0, nextCenter - 28 - el.clientWidth / 2);
-            gsap.to(el, { scrollLeft: target, duration: 0.65, ease: 'power3.out', overwrite: true });
-          }
-        }
-        prevActive.current = openIdx;
         if (openIdx !== null) lastOpen.current = openIdx;
 
         // paused while the shopper is touching/swiping or a garment is open
-        if (touchHold.current || openIdx !== null || document.hidden || gsap.isTweening(el)) {
+        if (touchHold.current || openIdx !== null || document.hidden || scrollTween.current?.isActive()) {
           pos = el.scrollLeft;
           prevMid = pos + el.clientWidth / 2;
           return;
@@ -362,7 +381,6 @@ export default function HomePage() {
               lastOpen.current = g;
               activeRef.current = g; // pause the drift immediately
               setActiveIndex(g);
-              centerRail(g);
               break;
             }
           }
@@ -529,7 +547,6 @@ export default function HomePage() {
                           e.preventDefault();
                           e.stopPropagation();
                           setActiveIndex(idx);
-                          centerRail(idx);
                         }
                       }}
                       data-side={product.sideImage ? '1' : '0'}

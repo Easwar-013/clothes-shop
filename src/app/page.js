@@ -32,6 +32,7 @@ export default function HomePage() {
   const activeRef = useRef(null);
   const touchHold = useRef(false);
   const prevOpen = useRef(null);
+  const angles = useRef({}); // per-garment 3D turn angle (mobile)
   const scrollTween = useRef(null);
   const lastOpen = useRef(-1);
   const downActive = useRef(false); // was this garment already open when the finger/mouse went down?
@@ -159,10 +160,10 @@ export default function HomePage() {
     return () => window.removeEventListener('resize', calc);
   }, [products.length]);
 
-  // Mobile: an opened garment stays open ~3s (after its 0.9s turn), then closes so the drift resumes
+  // Mobile: an opened garment stays open ~3s (after its 1.1s 3D turn), then closes so the drift resumes
   useEffect(() => {
     if (!isMobile || activeIndex === null) return;
-    const t = setTimeout(() => setActiveIndex(null), 3900);
+    const t = setTimeout(() => setActiveIndex(null), 4100);
     return () => clearTimeout(t);
   }, [isMobile, activeIndex]);
 
@@ -203,6 +204,7 @@ export default function HomePage() {
       lastKey.current = trendingKey;
 
       const cardW = small ? 240 : 280;
+      if (isNewLineup) angles.current = {};
 
       items.forEach((item, i) => {
         const active = i === activeIndex;
@@ -215,7 +217,6 @@ export default function HomePage() {
 
         // [target, vars, extra tween options]
         const plan = [
-          [item, { width: active ? expandedW : collapsedW }, {}],
           [hanger, { rotationY: active ? 0 : -84, transformPerspective: 1400, transformOrigin: '50% 0%' }, {}], // hanger also turns edge-on
           [
             info,
@@ -224,12 +225,28 @@ export default function HomePage() {
           ],
         ];
 
-        if (hasSide) {
+        if (isMobile) {
+          // 3D pull-out: the garment stays on the rail, swings forward in depth while it turns
+          plan.push([item, { width: collapsedW }, { dur: 0 }]);
+          plan.push([
+            card,
+            {
+              z: active ? 90 : 0,
+              transformPerspective: 900,
+              transformOrigin: '50% 0%',
+              // its 240px box is wider than the slim garment: only catch taps once it is open
+              pointerEvents: active ? 'auto' : 'none',
+            },
+            { dur: active ? 1.1 : 0.8 },
+          ]);
+        } else if (hasSide) {
+          plan.push([item, { width: active ? expandedW : collapsedW }, {}]);
           // Uploaded side photo: slim garment showing the side view, opens to the front photo
           plan.push([card, { rotationY: 0, transformPerspective: 1600, width: active ? cardW : collapsedW }, {}]);
           if (front) plan.push([front, { opacity: active ? 1 : 0 }, { dur: dur * 0.7 }]);
           if (side) plan.push([side, { opacity: active ? 0 : 1 }, { dur: dur * 0.7 }]);
         } else {
+          plan.push([item, { width: active ? expandedW : collapsedW }, {}]);
           // No side photo: fall back to turning the front photo edge-on
           plan.push([
             card,
@@ -253,6 +270,48 @@ export default function HomePage() {
           }
         });
 
+        if (isMobile) {
+          const frontPlane = item.querySelector('.rail-plane-front');
+          const sidePlane = item.querySelector('.rail-plane-side');
+          const shadeFront = frontPlane?.querySelector('.rail-shade');
+          const shadeSide = sidePlane?.querySelector('.rail-shade');
+          const closedAngle = sidePlane ? -90 : -75;
+
+          if (!angles.current[i]) angles.current[i] = { angle: closedAngle };
+          const st = angles.current[i];
+
+          // Paint one frame of the turn: both planes spin around the same vertical axis,
+          // and the plane turning away darkens like it is leaving the light
+          const paint = () => {
+            const a = st.angle;
+            if (frontPlane) gsap.set(frontPlane, { rotationY: a, transformOrigin: '50% 50%' });
+            if (sidePlane) gsap.set(sidePlane, { rotationY: a + 90, transformOrigin: '50% 50%' });
+            if (shadeFront) shadeFront.style.opacity = String(Math.min(0.6, (Math.abs(a) / 90) * 0.6));
+            if (shadeSide) shadeSide.style.opacity = String(Math.min(0.6, (Math.abs(a + 90) / 90) * 0.6));
+          };
+
+          // neighbours make room instead of sliding the whole rail
+          const gapSteps = [0, 96, 64, 32];
+          const dist = activeIndex === null ? 0 : i - activeIndex;
+          const push = active || Math.abs(dist) > 3 ? 0 : Math.sign(dist) * gapSteps[Math.abs(dist)];
+          const target = active ? 0 : closedAngle;
+
+          gsap.set(item, { zIndex: active ? 20 : 1 });
+          if (isNewLineup || reduce) {
+            st.angle = target;
+            paint();
+            gsap.set(item, { x: push });
+          } else {
+            gsap.to(st, {
+              angle: target,
+              duration: active ? 1.1 : 0.8,
+              ease: active ? 'back.out(1.5)' : 'power3.inOut',
+              overwrite: 'auto',
+              onUpdate: paint,
+            });
+            gsap.to(item, { x: push, duration: 0.9, ease: 'power3.out', overwrite: 'auto' });
+          }
+        }
       });
 
       // Mobile: glide the rail in step with the width change, so the garment opens/closes
@@ -264,18 +323,8 @@ export default function HomePage() {
         let endScroll = null;
 
         if (activeIndex !== null && rowsAll[activeIndex]) {
-          // final position of the row once any garment that is closing has finished shrinking
-          let left = rowsAll[activeIndex].offsetLeft;
-          const prev = prevOpen.current;
-          if (prev !== null && prev < activeIndex && rowsAll[prev]) {
-            left -= Math.max(0, rowsAll[prev].offsetWidth - collapsedW);
-          }
-          endScroll = left + expandedW / 2 - scroller.clientWidth / 2;
-        } else if (activeIndex === null && prevOpen.current !== null && rowsAll[prevOpen.current]) {
-          // line the next garment up just before the middle so the showcase carries on
-          const gap = parseFloat(getComputedStyle(rowsAll[0].parentElement).columnGap) || 12;
-          const closedRow = rowsAll[prevOpen.current];
-          endScroll = closedRow.offsetLeft + collapsedW + gap + collapsedW / 2 - 28 - scroller.clientWidth / 2;
+          // bring the opened garment to the middle of the screen
+          endScroll = rowsAll[activeIndex].offsetLeft + collapsedW / 2 - scroller.clientWidth / 2;
         }
 
         scrollTween.current?.kill();
@@ -597,35 +646,84 @@ export default function HomePage() {
                         <path d="M65 30L30 42H100L65 30Z" stroke="#c8935a" strokeWidth="4" />
                       </svg>
 
-                      <div className="rail-card relative z-10 shrink-0 w-[240px] sm:w-[280px] will-change-transform">
-                        <Link href={`/product/${product._id}`} className="block relative">
-                          <div className="h-[280px] sm:h-[340px] overflow-hidden relative">
-                            {product.images?.[0] ? (
-                              <img
-                                src={product.images[0]}
-                                alt={product.title}
-                                className="rail-front w-full h-full object-contain object-top"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                No Image
+                      <div
+                        className="rail-card relative z-10 shrink-0 w-[240px] sm:w-[280px] will-change-transform"
+                        style={isMobile ? { transformStyle: 'preserve-3d' } : undefined}
+                      >
+                        <Link
+                          href={`/product/${product._id}`}
+                          className="block relative"
+                          style={isMobile ? { transformStyle: 'preserve-3d' } : undefined}
+                        >
+                          {isMobile ? (
+                            /* Mobile: real 3D turn. A front plane and a side plane share one vertical axis. */
+                            <div className="rail-stage relative h-[280px]" style={{ transformStyle: 'preserve-3d' }}>
+                              <div
+                                className="rail-plane-front absolute inset-0"
+                                style={{ backfaceVisibility: 'hidden' }}
+                              >
+                                {product.images?.[0] ? (
+                                  <img
+                                    src={product.images[0]}
+                                    alt={product.title}
+                                    className="w-full h-full object-contain object-top"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                                    No Image
+                                  </div>
+                                )}
+                                {hasOffer && (
+                                  <span className="rail-badge absolute top-2 right-2 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md">
+                                    {offerPercent}% OFF
+                                  </span>
+                                )}
+                                <div className="rail-shade pointer-events-none absolute inset-0 bg-gradient-to-r from-black/70 via-black/20 to-transparent" />
                               </div>
-                            )}
 
-                            {product.sideImage && (
-                              <img
-                                src={product.sideImage}
-                                alt={`${product.title} side view`}
-                                className="rail-side absolute inset-0 w-full h-full object-cover object-top"
-                              />
-                            )}
-
-                            {hasOffer && (
-                              <span className="rail-badge absolute top-2 right-2 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md">
-                                {offerPercent}% OFF
-                              </span>
-                            )}
-                          </div>
+                              {product.sideImage && (
+                                <div
+                                  className="rail-plane-side absolute top-0 left-1/2 -ml-[28px] h-full w-[56px]"
+                                  style={{ backfaceVisibility: 'hidden' }}
+                                >
+                                  <img
+                                    src={product.sideImage}
+                                    alt={`${product.title} side view`}
+                                    className="w-full h-full object-contain object-top"
+                                  />
+                                  <div className="rail-shade pointer-events-none absolute inset-0 bg-gradient-to-r from-black/70 via-black/20 to-transparent" />
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                          <div className="h-[280px] sm:h-[340px] overflow-hidden relative">
+                              {product.images?.[0] ? (
+                                <img
+                                  src={product.images[0]}
+                                  alt={product.title}
+                                  className="rail-front w-full h-full object-contain object-top"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                                  No Image
+                                </div>
+                              )}
+  
+                              {product.sideImage && (
+                                <img
+                                  src={product.sideImage}
+                                  alt={`${product.title} side view`}
+                                  className="rail-side absolute inset-0 w-full h-full object-cover object-top"
+                                />
+                              )}
+  
+                              {hasOffer && (
+                                <span className="rail-badge absolute top-2 right-2 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md">
+                                  {offerPercent}% OFF
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </Link>
 
                         <div className="rail-info absolute top-full left-0 right-0 pt-2 text-center">

@@ -21,10 +21,12 @@ export default function HomePage() {
   const [addedId, setAddedId] = useState(null);
   const [activeIndex, setActiveIndex] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [copies, setCopies] = useState(4);
 
   const sectionRef = useRef(null);
   const scrollRef = useRef(null);
   const hoverTimer = useRef(null);
+  const hoverRail = useRef(false);
   const lastKey = useRef('');
   const swayRef = useRef([]);
   const activeRef = useRef(null);
@@ -140,6 +142,23 @@ export default function HomePage() {
     return () => mq.removeEventListener('change', update);
   }, []);
 
+  // Enough repeated copies to fill the rail edge to edge while it drifts (1 when motion is reduced)
+  useEffect(() => {
+    const calc = () => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        setCopies(1);
+        return;
+      }
+      const small = window.innerWidth < 640;
+      const slot = small ? 52 + 12 : 76 + 20;
+      const setWidth = Math.max(1, products.length) * slot;
+      setCopies(Math.min(12, Math.max(4, Math.ceil(window.innerWidth / setWidth) + 2)));
+    };
+    calc();
+    window.addEventListener('resize', calc);
+    return () => window.removeEventListener('resize', calc);
+  }, [products.length]);
+
   // Mobile: an opened garment stays open ~3s (after its 0.9s turn), then closes so the drift resumes
   useEffect(() => {
     if (!isMobile || activeIndex === null) return;
@@ -168,7 +187,7 @@ export default function HomePage() {
   };
 
   // GSAP: garments hang edge-on; the hovered one swings round to face the shopper
-  const trendingKey = products.map((p) => p._id).join(',') + (isMobile ? '|m' : '');
+  const trendingKey = products.map((p) => p._id).join(',') + (isMobile ? '|m' : '') + '|c' + copies;
   useGSAP(
     () => {
       if (loading || !trendingKey) return;
@@ -336,11 +355,12 @@ export default function HomePage() {
     { scope: sectionRef, dependencies: [trendingKey, loading] }
   );
 
-  // GSAP: mobile auto-drift, right to left, looping seamlessly over repeated copies
+  // GSAP: auto-drift right to left (all screens), looping seamlessly over repeated copies;
+  // on desktop it pauses while the cursor is over the rail
   useGSAP(
     () => {
       const el = scrollRef.current;
-      if (!isMobile || loading || !trendingKey || !el) return;
+      if (loading || !trendingKey || !el) return;
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
       let pos = el.scrollLeft;
@@ -357,12 +377,19 @@ export default function HomePage() {
         if (openIdx !== null) lastOpen.current = openIdx;
 
         // paused while the shopper is touching/swiping or a garment is open
-        if (touchHold.current || openIdx !== null || document.hidden || scrollTween.current?.isActive()) {
+        if (
+          touchHold.current ||
+          hoverRail.current ||
+          openIdx !== null ||
+          document.hidden ||
+          scrollTween.current?.isActive()
+        ) {
           pos = el.scrollLeft;
           prevMid = pos + el.clientWidth / 2;
           return;
         }
 
+        if (Math.abs(el.scrollLeft - pos) > 3) pos = el.scrollLeft; // shopper scrolled by hand
         const setWidth = next.offsetLeft - first.offsetLeft;
         pos += 0.045 * delta; // ~45px per second
         let wrapped = false;
@@ -372,9 +399,9 @@ export default function HomePage() {
         }
         el.scrollLeft = pos;
 
-        // Showcase: the garment crossing the middle of the screen opens by itself
+        // Showcase (touch screens): the garment crossing the middle of the screen opens by itself
         const mid = pos + el.clientWidth / 2;
-        if (!wrapped) {
+        if (!wrapped && isMobile) {
           for (let g = 0; g < rows.length; g++) {
             const c = rows[g].offsetLeft + rows[g].offsetWidth / 2;
             if (c > prevMid && c <= mid && g !== lastOpen.current) {
@@ -394,7 +421,7 @@ export default function HomePage() {
   );
 
   // On mobile the lineup is repeated so the loop never shows a gap
-  const railItems = (isMobile ? [0, 1, 2, 3] : [0]).flatMap((copy) =>
+  const railItems = Array.from({ length: copies }, (_, c) => c).flatMap((copy) =>
     products.map((p) => ({ product: p, key: `${p._id}-${copy}` }))
   );
 
@@ -492,7 +519,11 @@ export default function HomePage() {
 
             <div
               ref={scrollRef}
+              onMouseEnter={() => {
+                if (!isMobile) hoverRail.current = true;
+              }}
               onMouseLeave={() => {
+                hoverRail.current = false;
                 if (!isMobile) closeRail();
               }}
               onTouchStart={() => {
@@ -505,7 +536,7 @@ export default function HomePage() {
                   touchHold.current = false;
                 }, 2500);
               }}
-              className="overflow-x-auto no-scrollbar pb-6"
+              className="overflow-x-auto no-scrollbar pb-6 sm:[mask-image:linear-gradient(to_right,transparent,#000_5%,#000_95%,transparent)]"
             >
               <div className="flex w-max mx-auto items-start gap-3 sm:gap-5 px-1">
                 {railItems.map(({ product, key }, idx) => {

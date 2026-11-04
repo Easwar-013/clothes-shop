@@ -43,18 +43,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="relative min-h-[80vh] flex items-start sm:items-center justify-center px-4 pt-[42vw] pb-6 sm:pt-0 sm:pb-0
-        bg-black bg-[url('/login-bg.jpeg')] bg-[length:64%_auto] bg-[position:50%_10px] bg-no-repeat
-        sm:bg-gray-50 sm:bg-none"
-    >
-      {/* Mobile only: orange-tinted fade so the form sits on the picture instead of a white card */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[78%] bg-gradient-to-t from-orange-950/60 via-black/75 to-transparent sm:hidden" />
+    <div className="relative min-h-[80vh] flex items-center justify-center px-4 py-6 sm:py-0 bg-black sm:bg-gray-50 overflow-hidden">
+      {/* Mobile only: the logo sits behind the form; its soft round mask hides the photo's square edges */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 sm:hidden bg-[url('/login-bg.jpeg')] bg-[length:108%_auto] bg-center bg-no-repeat
+          [mask-image:radial-gradient(circle_closest-side,#000_86%,transparent_100%)]"
+      />
+      {/* Mobile only: orange-tinted fade at the bottom */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-orange-950/50 to-transparent sm:hidden" />
 
       <div
         className="relative z-10 max-w-md w-full p-5 sm:p-8 rounded-3xl text-white sm:text-gray-900
-          bg-gradient-to-b from-white/5 via-black/35 to-black/60 backdrop-blur-md border border-white/20
-          shadow-[0_0_60px_rgba(249,115,22,0.18)]
+          [text-shadow:0_1px_6px_rgba(0,0,0,0.75)] sm:[text-shadow:none]
+          bg-gradient-to-b from-black/25 via-black/40 to-black/55 backdrop-blur-[3px] border border-white/20
+          shadow-[0_0_60px_rgba(249,115,22,0.2)]
           sm:bg-white sm:bg-none sm:backdrop-blur-none sm:border-gray-200 sm:shadow-sm"
       >
         <div className="text-center mb-4 sm:mb-6">
@@ -80,7 +83,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               className="w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-sm focus:outline-none transition
-                bg-white/10 border border-white/40 text-white placeholder:text-white/50 focus:border-orange-400 focus:bg-white/15
+                bg-black/35 border border-white/40 text-white placeholder:text-white/60 focus:border-orange-400 focus:bg-black/45
                 sm:bg-white sm:border-gray-300 sm:text-gray-900 sm:placeholder:text-gray-400 sm:focus:border-orange-500 sm:focus:bg-white"
             />
           </div>
@@ -96,7 +99,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-sm focus:outline-none transition
-                bg-white/10 border border-white/40 text-white placeholder:text-white/50 focus:border-orange-400 focus:bg-white/15
+                bg-black/35 border border-white/40 text-white placeholder:text-white/60 focus:border-orange-400 focus:bg-black/45
                 sm:bg-white sm:border-gray-300 sm:text-gray-900 sm:placeholder:text-gray-400 sm:focus:border-orange-500 sm:focus:bg-white"
             />
           </div>
@@ -122,7 +125,7 @@ export default function LoginPage() {
         <button
           onClick={() => signIn('google', { callbackUrl: '/catalog' })}
           className="w-full font-bold py-2 sm:py-2.5 rounded-xl transition text-xs flex items-center justify-center space-x-2 shadow-sm
-            bg-white/10 hover:bg-white/20 border border-white/40 text-white
+            bg-black/35 hover:bg-black/50 border border-white/40 text-white
             sm:bg-white sm:hover:bg-gray-50 sm:border-gray-300 sm:text-gray-700"
         >
           <span className="bg-white rounded-full p-1 sm:p-0 flex">

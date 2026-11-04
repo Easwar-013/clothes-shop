@@ -44,21 +44,21 @@ export default function LoginPage() {
 
   return (
     <div
-      className="relative min-h-[80vh] flex items-start sm:items-center justify-center px-4 pt-[58vw] pb-10 sm:pt-0 sm:pb-0
-        bg-black bg-[url('/login-bg.jpeg')] bg-[length:100%_auto] bg-top bg-no-repeat
+      className="relative min-h-[80vh] flex items-start sm:items-center justify-center px-4 pt-[42vw] pb-6 sm:pt-0 sm:pb-0
+        bg-black bg-[url('/login-bg.jpeg')] bg-[length:64%_auto] bg-[position:50%_10px] bg-no-repeat
         sm:bg-gray-50 sm:bg-none"
     >
       {/* Mobile only: orange-tinted fade so the form sits on the picture instead of a white card */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[78%] bg-gradient-to-t from-orange-950/60 via-black/75 to-transparent sm:hidden" />
 
       <div
-        className="relative z-10 max-w-md w-full p-6 sm:p-8 rounded-3xl text-white sm:text-gray-900
+        className="relative z-10 max-w-md w-full p-5 sm:p-8 rounded-3xl text-white sm:text-gray-900
           bg-gradient-to-b from-white/5 via-black/35 to-black/60 backdrop-blur-md border border-white/20
           shadow-[0_0_60px_rgba(249,115,22,0.18)]
           sm:bg-white sm:bg-none sm:backdrop-blur-none sm:border-gray-200 sm:shadow-sm"
       >
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-black">Welcome Back</h1>
+        <div className="text-center mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-black">Welcome Back</h1>
           <p className="text-white/70 sm:text-gray-500 text-xs mt-1">Sign in to your HangOver account</p>
         </div>
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase text-white/90 sm:text-gray-700 mb-1">
               Email or Username
@@ -79,7 +79,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-3.5 py-2.5 rounded-xl text-sm focus:outline-none transition
+              className="w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-sm focus:outline-none transition
                 bg-white/10 border border-white/40 text-white placeholder:text-white/50 focus:border-orange-400 focus:bg-white/15
                 sm:bg-white sm:border-gray-300 sm:text-gray-900 sm:placeholder:text-gray-400 sm:focus:border-orange-500 sm:focus:bg-white"
             />
@@ -95,7 +95,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-3.5 py-2.5 rounded-xl text-sm focus:outline-none transition
+              className="w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-sm focus:outline-none transition
                 bg-white/10 border border-white/40 text-white placeholder:text-white/50 focus:border-orange-400 focus:bg-white/15
                 sm:bg-white sm:border-gray-300 sm:text-gray-900 sm:placeholder:text-gray-400 sm:focus:border-orange-500 sm:focus:bg-white"
             />
@@ -104,7 +104,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full text-white font-bold py-3 rounded-xl transition text-sm shadow-md disabled:opacity-50
+            className="w-full text-white font-bold py-2.5 sm:py-3 rounded-xl transition text-sm shadow-md disabled:opacity-50
               bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-orange-500/30
               sm:bg-orange-500 sm:bg-none sm:hover:bg-orange-600 sm:shadow-md"
           >
@@ -112,7 +112,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="flex items-center gap-3 my-6">
+        <div className="flex items-center gap-3 my-4 sm:my-6">
           <div className="flex-1 border-t border-white/25 sm:border-gray-200" />
           <span className="text-[11px] font-bold uppercase text-white/70 sm:text-gray-400">Or continue with</span>
           <div className="flex-1 border-t border-white/25 sm:border-gray-200" />
@@ -121,7 +121,7 @@ export default function LoginPage() {
         {/* Google Sign In Button */}
         <button
           onClick={() => signIn('google', { callbackUrl: '/catalog' })}
-          className="w-full font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center space-x-2 shadow-sm
+          className="w-full font-bold py-2 sm:py-2.5 rounded-xl transition text-xs flex items-center justify-center space-x-2 shadow-sm
             bg-white/10 hover:bg-white/20 border border-white/40 text-white
             sm:bg-white sm:hover:bg-gray-50 sm:border-gray-300 sm:text-gray-700"
         >
@@ -148,7 +148,7 @@ export default function LoginPage() {
           <span>Sign in with Google</span>
         </button>
 
-        <p className="mt-6 text-center text-xs text-white/70 sm:text-gray-500">
+        <p className="mt-4 sm:mt-6 text-center text-xs text-white/70 sm:text-gray-500">
           Don't have an account?{' '}
           <Link href="/register" className="text-orange-400 sm:text-orange-500 font-bold hover:underline">
             Register here

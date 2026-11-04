@@ -43,8 +43,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white p-8 rounded-3xl border border-gray-200 shadow-sm text-gray-900">
+    <div
+      className="min-h-[80vh] flex items-start sm:items-center justify-center px-4 pt-[44vw] pb-10 sm:pt-0 sm:pb-0
+        bg-black bg-[url('/login-bg.jpeg')] bg-[length:100%_auto] bg-top bg-no-repeat
+        sm:bg-gray-50 sm:bg-none"
+    >
+      <div className="max-w-md w-full bg-white p-8 rounded-3xl border border-white/10 sm:border-gray-200 shadow-[0_20px_60px_rgba(0,0,0,0.6)] sm:shadow-sm text-gray-900">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-black">Welcome Back</h1>
           <p className="text-gray-500 text-xs mt-1">Sign in to your HangOver account</p>
